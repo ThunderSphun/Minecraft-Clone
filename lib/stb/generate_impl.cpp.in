@@ -1,0 +1,2 @@
+#define @macro_name@
+#include "@header@.h"
