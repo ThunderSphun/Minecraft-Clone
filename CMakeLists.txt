@@ -5,9 +5,40 @@ set(LIB_DIR ${CMAKE_SOURCE_DIR}/lib)
 
 set(CMAKE_CXX_STANDARD 23)
 
-find_package(GLEW REQUIRED)
-find_package(glfw3 3.3 REQUIRED)
-find_package(glm REQUIRED)
+include(FetchContent)
+
+find_package(GLEW QUIET)
+if (NOT GLEW_FOUND)
+    FetchContent_Declare(
+        glew
+        GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.git
+    )
+
+    FetchContent_MakeAvailable(glew)
+
+    add_library(GLEW::GLEW ALIAS libglew_static)
+endif()
+
+find_package(glfw3 3.3 QUIET)
+if (NOT glfw3_FOUND)
+    FetchContent_Declare(
+        glfw
+        GIT_REPOSITORY https://github.com/glfw/glfw.git
+    )
+
+    FetchContent_MakeAvailable(glfw)
+endif()
+
+find_package(glm QUIET)
+if (NOT glm_FOUND)
+    FetchContent_Declare(
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+    )
+
+    FetchContent_MakeAvailable(glm)
+endif()
+
 find_package(OpenGL REQUIRED)
 
 add_subdirectory(${LIB_DIR}/stb)

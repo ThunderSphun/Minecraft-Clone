@@ -16,25 +16,25 @@ GLFWwindow* window = nullptr;
 GLFWcursor* cursor = nullptr;
 
 void init() {
-    glfwSetErrorCallback([](int error, const char* description) {
+	glfwSetErrorCallback([](int error, const char* description) {
 		std::cerr << std::format("GLFW Error {}: {}", error, description) << std::endl;
 	});
 
-    if (!glfwInit())
+	if (!glfwInit())
 		exit(-1);
 
 	std::atexit(glfwTerminate);
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 
 	window = glfwCreateWindow(1080, 720, "Minecraft", nullptr, nullptr);
 	if (window == nullptr)
 		exit(-1);
 
 	std::atexit([](){glfwDestroyWindow(window);});
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
 
 	cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
 	std::atexit([](){glfwDestroyCursor(cursor);});
@@ -82,9 +82,9 @@ int main() {
 		double time = glfwGetTime();
 		static double pTime = time;
 		glfwPollEvents();
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 
 		glClearColor(bgCol.r, bgCol.g, bgCol.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
