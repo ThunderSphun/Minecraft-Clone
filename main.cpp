@@ -1,3 +1,5 @@
+#include "shader.h"
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
@@ -72,6 +74,9 @@ void init() {
 }
 
 int main() {
+	Minecraft::createShader(std::filesystem::path("file"), GL_FRAGMENT_SHADER);
+	Minecraft::createShader(std::filesystem::path("file.frag"));
+
 	init();
 
 	ImGuiIO& io = ImGui::GetIO();
