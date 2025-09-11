@@ -7,39 +7,45 @@ set(CMAKE_CXX_STANDARD 23)
 
 include(FetchContent)
 
+set(fetchTargets)
+
 find_package(GLEW QUIET)
 if (NOT GLEW_FOUND)
+    message(STATUS "Could not find glew, downloading instead")
     FetchContent_Declare(
         glew
         GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.git
     )
-
-    FetchContent_MakeAvailable(glew)
-
-    add_library(GLEW::GLEW ALIAS libglew_static)
+    list(APPEND fetchTargets glew)
 endif()
 
 find_package(glfw3 3.3 QUIET)
 if (NOT glfw3_FOUND)
+    message(STATUS "Could not find glfw, downloading instead")
     FetchContent_Declare(
         glfw
         GIT_REPOSITORY https://github.com/glfw/glfw.git
     )
-
-    FetchContent_MakeAvailable(glfw)
+    list(APPEND fetchTargets glfw)
 endif()
 
 find_package(glm QUIET)
 if (NOT glm_FOUND)
+    message(STATUS "Could not find glm, downloading instead")
     FetchContent_Declare(
         glm
         GIT_REPOSITORY https://github.com/g-truc/glm.git
     )
-
-    FetchContent_MakeAvailable(glm)
+    list(APPEND fetchTargets glm)
 endif()
 
 find_package(OpenGL REQUIRED)
+
+FetchContent_MakeAvailable(${fetchTargets})
+
+if (NOT GLEW_FOUND)
+    add_library(GLEW::GLEW ALIAS libglew_static)
+endif()
 
 add_subdirectory(${LIB_DIR}/stb)
 add_subdirectory(${LIB_DIR}/DearImGui)
@@ -50,9 +56,6 @@ file(GLOB_RECURSE srcfiles src/*.cpp src/*.c)
 
 add_executable(${PROJECT_NAME} main.cpp ${srcfiles})
 
-###############################
-# linking libraries to binary #
-###############################
 target_link_libraries(${PROJECT_NAME} PRIVATE GLEW::GLEW)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
 target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)

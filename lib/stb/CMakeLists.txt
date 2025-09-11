@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.12)
 
 set(STB_HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/stb)
 
-set(STB_HEADERS ${STB_HEADERS_DIR}/stb_perlin.h ${STB_HEADERS_DIR}/stb_image.h)
+set(STB_HEADERS stb_perlin.h;stb_image.h)
+
+message(STATUS "building targets for ${STB_HEADERS}")
 
 foreach(header_file ${STB_HEADERS})
 	get_filename_component(header ${header_file} NAME_WE)
