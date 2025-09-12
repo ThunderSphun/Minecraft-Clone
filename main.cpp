@@ -75,7 +75,9 @@ void init() {
 
 int main() {
 	Minecraft::createShader(std::filesystem::path("file"), GL_FRAGMENT_SHADER);
+	Minecraft::createShader(std::filesystem::path("file"));
 	Minecraft::createShader(std::filesystem::path("file.frag"));
+	Minecraft::createShader(std::filesystem::path("shader/file.frag"));
 
 	init();
 

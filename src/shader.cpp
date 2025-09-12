@@ -2,7 +2,8 @@
 
 #include <string>
 #include <fstream>
-#include <iostream>;
+#include <iostream>
+#include <format>
 
 namespace Minecraft {
 	GLuint createShader(const std::string_view& source, GLenum shaderType) {
@@ -22,8 +23,15 @@ namespace Minecraft {
 				default: return 0;
 			}
 		}
-		if (!path.has_parent_path())
-			path = std::filesystem::path("assets") / "shaders" / path;
+		if (path.has_parent_path() && path.parent_path() == "shaders")
+			path = std::filesystem::path(ASSETS_ROOT) / path;
+		else if (!path.has_parent_path())
+			path = std::filesystem::path(ASSETS_ROOT) / "shaders" / path;
+
+		if (!std::filesystem::exists(path)) {
+			std::cout << "file " << path.filename() << " at " << path.parent_path() << " does not exist" << std::endl;
+			return 0;
+		}
 
 		auto size = std::filesystem::file_size(path);
 		std::string str(size, '\0');
@@ -41,7 +49,8 @@ namespace Minecraft {
 		if (extension == ".geom") return createShader(path, GL_GEOMETRY_SHADER);
 		if (extension == ".frag") return createShader(path, GL_FRAGMENT_SHADER);
 		if (extension == ".comp") return createShader(path, GL_COMPUTE_SHADER);
+
+		std::cerr << "could not refer shader type from path " << path << std::endl;
 		return 0;
 	}
 }
-

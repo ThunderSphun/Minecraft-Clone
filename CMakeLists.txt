@@ -63,9 +63,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
 target_link_libraries(${PROJECT_NAME} PRIVATE stb::image stb::perlin)
 target_link_libraries(${PROJECT_NAME} PRIVATE Dear_ImGui)
 
-add_custom_command(
-    TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
-            ${CMAKE_SOURCE_DIR}/assets
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
-)
+
+add_compile_definitions(ASSETS_ROOT="${CMAKE_SOURCE_DIR}/assets")
