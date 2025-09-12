@@ -29,6 +29,7 @@ void init() {
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	window = glfwCreateWindow(1080, 720, "Minecraft", nullptr, nullptr);
 	if (window == nullptr)
@@ -37,6 +38,14 @@ void init() {
 	std::atexit([](){glfwDestroyWindow(window);});
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
+
+	{
+		GLenum err = glewInit();
+		if (err != GLEW_OK) {
+			std::cerr << "Could not initialize GLEW: " << glewGetErrorString(err) << std::endl;
+			exit(-1);
+		}
+	}
 
 	cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
 	std::atexit([](){glfwDestroyCursor(cursor);});
@@ -74,12 +83,12 @@ void init() {
 }
 
 int main() {
-	Minecraft::createShader(std::filesystem::path("file"), GL_FRAGMENT_SHADER);
-	Minecraft::createShader(std::filesystem::path("file"));
-	Minecraft::createShader(std::filesystem::path("file.frag"));
-	Minecraft::createShader(std::filesystem::path("shader/file.frag"));
-
 	init();
+
+	glDeleteShader(Minecraft::createShader(std::filesystem::path("file"), GL_FRAGMENT_SHADER));
+	glDeleteShader(Minecraft::createShader(std::filesystem::path("file")));
+	glDeleteShader(Minecraft::createShader(std::filesystem::path("file.frag")));
+	glDeleteShader(Minecraft::createShader(std::filesystem::path("shader/file.frag")));
 
 	ImGuiIO& io = ImGui::GetIO();
 
