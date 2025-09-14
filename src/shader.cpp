@@ -4,7 +4,7 @@
 #include <iostream>
 
 namespace Minecraft {
-	GLuint createShader(const char* source, GLenum shaderType) {
+	GLuint createShader(const std::string_view& source, GLenum shaderType) {
 		GLuint shaderID = glCreateShader(shaderType);
 
 		if (shaderID == 0) {
@@ -19,7 +19,17 @@ namespace Minecraft {
 			return 0;
 		}
 
-		glShaderSource(shaderID, 1, &source, nullptr);
+		const char* sourceData = source.data();
+		glShaderSource(shaderID, 1, &sourceData, nullptr);
+		{
+			GLint shaderSourceLength = 0;
+			glGetShaderiv(shaderID, GL_SHADER_SOURCE_LENGTH, &shaderSourceLength);
+			if (shaderSourceLength == 0) {
+				std::cerr << "could not upload shader source to OpenGL" << std::endl;
+				glDeleteShader(shaderID);
+				return 0;
+			}
+		}
 
 		glCompileShader(shaderID);
 		{
@@ -28,14 +38,10 @@ namespace Minecraft {
 			if (error == GL_FALSE) {
 				int length = 0;
 				glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &length);
-				char* errorMessage = new char[length + 1];
-				memset(errorMessage, 0, length + 1);
+				std::string errorMessage(length, '\0');
 				int writtenCount = 0;
-				glGetShaderInfoLog(shaderID, length, &writtenCount, errorMessage);
-				std::cerr << errorMessage << std::endl;
-				errorMessage[length] = '\0';
-				std::cerr << errorMessage << std::endl;
-				delete[] errorMessage;
+				glGetShaderInfoLog(shaderID, length, &writtenCount, errorMessage.data());
+				std::cerr << "shader compiled with error: \n" << errorMessage << std::endl;
 
 				glDeleteShader(shaderID);
 				return 0;
@@ -69,13 +75,11 @@ namespace Minecraft {
 		}
 
 		auto size = std::filesystem::file_size(path);
-		char* str = new char[size];
-		memset(str, 0, size);
+		std::string str(size, '\0');
 		std::ifstream in(path);
-		in.read(str, size);
+		in.read(str.data(), size);
 
-		GLuint shaderID = createShader(str, shaderType);
-		delete[] str;
+		GLuint shaderID = createShader(std::string_view(str), shaderType);
 
 		return shaderID;
 	}
