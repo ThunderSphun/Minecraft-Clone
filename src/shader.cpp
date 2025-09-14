@@ -59,9 +59,9 @@ namespace Minecraft {
 			}
 		}
 		if (path.has_parent_path() && path.parent_path() == "shaders")
-			path = std::filesystem::path(ASSETS_ROOT) / path;
+			path = std::filesystem::path("assets") / path;
 		else if (!path.has_parent_path())
-			path = std::filesystem::path(ASSETS_ROOT) / "shaders" / path;
+			path = std::filesystem::path("assets") / "shaders" / path;
 
 		if (!std::filesystem::exists(path)) {
 			std::cout << "file " << path.filename() << " at " << path.parent_path() << " does not exist" << std::endl;

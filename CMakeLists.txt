@@ -63,5 +63,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
 target_link_libraries(${PROJECT_NAME} PRIVATE stb::image stb::perlin)
 target_link_libraries(${PROJECT_NAME} PRIVATE Dear_ImGui)
 
-
-add_compile_definitions(ASSETS_ROOT="${CMAKE_SOURCE_DIR}/assets")
+set_target_properties(${PROJECT_NAME} PROPERTIES DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
