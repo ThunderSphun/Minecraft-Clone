@@ -85,8 +85,12 @@ void init() {
 int main() {
 	init();
 
-	glDeleteShader(Minecraft::createShader(std::filesystem::path("shader"), GL_FRAGMENT_SHADER));
-	glDeleteShader(Minecraft::createShader(std::filesystem::path("shader"), GL_VERTEX_SHADER));
+	{
+		using namespace Assets;
+		Shader::Program program{};
+		program.attach(Shader::load(std::filesystem::path("simple"), GL_FRAGMENT_SHADER));
+		program.attach(Shader::load(std::filesystem::path("simple"), GL_VERTEX_SHADER));
+	}
 
 	ImGuiIO& io = ImGui::GetIO();
 
