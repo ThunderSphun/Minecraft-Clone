@@ -1,4 +1,5 @@
 #include "shader.h"
+#include "shaderProgram.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -85,8 +86,31 @@ void init() {
 int main() {
 	init();
 
-	glDeleteShader(Minecraft::createShader(std::filesystem::path("shader"), GL_FRAGMENT_SHADER));
-	glDeleteShader(Minecraft::createShader(std::filesystem::path("shader"), GL_VERTEX_SHADER));
+	Shader vertShader;
+	Shader fragShader;
+
+	try {
+		vertShader = Shader("simple", GL_VERTEX_SHADER);
+	} catch (const std::runtime_error& ex) {
+		std::cerr << ex.what() << std::endl;
+		exit(-1);
+	}
+
+	try {
+		fragShader = Shader("simple", GL_FRAGMENT_SHADER);
+	} catch (const std::runtime_error& ex) {
+		std::cerr << ex.what() << std::endl;
+		exit(-1);
+	}
+
+	ShaderProgram* shaderProgram = new ShaderProgram();
+	shaderProgram
+		->attachShader(vertShader)
+		->attachShader(fragShader)
+		->bindAttribute(0, "a_position")
+		->bindAttribute(1, "a_color")
+		->linkProgram()
+		->useProgram();
 
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -119,4 +143,6 @@ int main() {
 		pTime = time;
 		glfwSwapBuffers(window);
 	}
+
+	delete shaderProgram;
 }

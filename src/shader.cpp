@@ -1,99 +1,148 @@
 #include "shader.h"
 
-#include <fstream>
 #include <iostream>
+#include <cstring>
+#include <sys/stat.h>
 
-namespace Minecraft {
-	GLuint createShader(const std::string_view& source, GLenum shaderType) {
-		GLuint shaderID = glCreateShader(shaderType);
-
-		if (shaderID == 0) {
-			GLenum error = glGetError();
-			if (error == GL_INVALID_ENUM)
-				std::cerr << "shaderType is not valid, must be one of " <<
-				"'GL_VERTEX_SHADER', 'GL_TESS_CONTROL_SHADER', 'GL_TESS_EVALUATION_SHADER', 'GL_GEOMETRY_SHADER', 'GL_FRAGMENT_SHADER', 'GL_COMPUTE_SHADER'"
-				<< std::endl;
-			else
-				std::cerr << "unknown error from glCreateShader" << std::endl;
-
-			return 0;
-		}
-
-		const char* sourceData = source.data();
-		glShaderSource(shaderID, 1, &sourceData, nullptr);
-		{
-			GLint shaderSourceLength = 0;
-			glGetShaderiv(shaderID, GL_SHADER_SOURCE_LENGTH, &shaderSourceLength);
-			if (shaderSourceLength == 0) {
-				std::cerr << "could not upload shader source to OpenGL" << std::endl;
-				glDeleteShader(shaderID);
-				return 0;
-			}
-		}
-
-		glCompileShader(shaderID);
-		{
-			GLint error = 0;
-			glGetShaderiv(shaderID, GL_COMPILE_STATUS, &error);
-			if (error == GL_FALSE) {
-				int length = 0;
-				glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &length);
-				std::string errorMessage(length, '\0');
-				int writtenCount = 0;
-				glGetShaderInfoLog(shaderID, length, &writtenCount, errorMessage.data());
-				std::cerr << "shader compiled with error: \n" << errorMessage << std::endl;
-
-				glDeleteShader(shaderID);
-				return 0;
-			}
-		}
-
-		return shaderID;
+Shader::Shader(const std::string& path, GLenum shaderType) {
+	{
+		std::string roughPath = path;
+		if (!parsePath(roughPath, shaderType))
+			throw std::runtime_error(roughPath);
+		this->path = roughPath;
 	}
 
-	GLuint createShader(std::filesystem::path path, GLenum shaderType) {
-		if (path.empty()) return 0;
-		if (!path.has_extension()) {
-			switch (shaderType) {
-				case GL_VERTEX_SHADER: path += ".vert"; break;
-				case GL_TESS_CONTROL_SHADER: path += ".tesc"; break;
-				case GL_TESS_EVALUATION_SHADER: path += ".tese"; break;
-				case GL_GEOMETRY_SHADER: path += ".geom"; break;
-				case GL_FRAGMENT_SHADER: path += ".frag"; break;
-				case GL_COMPUTE_SHADER: path += ".comp"; break;
-				default: return 0;
-			}
-		}
-		if (path.has_parent_path() && path.parent_path() == "shaders")
-			path = std::filesystem::path("assets") / path;
-		else if (!path.has_parent_path())
-			path = std::filesystem::path("assets") / "shaders" / path;
+	std::string shaderString = readEntireFile();
 
-		if (!std::filesystem::exists(path)) {
-			std::cout << "file " << path.filename() << " at " << path.parent_path() << " does not exist" << std::endl;
-			return 0;
-		}
+	if (!compile(shaderString.c_str(), shaderType))
+		throw std::runtime_error(lastError);
+}
 
-		auto size = std::filesystem::file_size(path);
-		std::string str(size, '\0');
-		std::ifstream in(path);
-		in.read(str.data(), size);
-
-		GLuint shaderID = createShader(std::string_view(str), shaderType);
-
-		return shaderID;
+bool Shader::shouldUpdate() const {
+	if (!path.has_value()) {
+		return false;
 	}
 
-	GLuint createShader(const std::filesystem::path& path) {
-		std::filesystem::path extension = path.extension();
-		if (extension == ".vert") return createShader(path, GL_VERTEX_SHADER);
-		if (extension == ".tesc") return createShader(path, GL_TESS_CONTROL_SHADER);
-		if (extension == ".tese") return createShader(path, GL_TESS_EVALUATION_SHADER);
-		if (extension == ".geom") return createShader(path, GL_GEOMETRY_SHADER);
-		if (extension == ".frag") return createShader(path, GL_FRAGMENT_SHADER);
-		if (extension == ".comp") return createShader(path, GL_COMPUTE_SHADER);
+	struct stat result{};
 
-		std::cerr << "could not refer shader type from path " << path << std::endl;
-		return 0;
+	if (stat(path->c_str(), &result) == -1) {
+		std::cerr << "filepath somehow invalid" << std::endl << "ignoring update" << std::endl;
+		return false;
 	}
+
+	bool retVal = false;
+	time_t fileChangedTimeStamp = result.st_mtime;
+	if (fileChangedTimeStamp > lastTimeStamp)
+		retVal = true;
+	lastTimeStamp = fileChangedTimeStamp;
+
+	return retVal;
+}
+
+bool Shader::compile(const char* source, GLenum shaderType) {
+	if (id != -1)
+		glDeleteShader(id);
+
+	switch (shaderType) {
+		case GL_FRAGMENT_SHADER:
+			id = glCreateShader(GL_FRAGMENT_SHADER);
+			break;
+		case GL_VERTEX_SHADER:
+			id = glCreateShader(GL_VERTEX_SHADER);
+			break;
+		default:
+			lastError = "shader type not supported";
+			return false;
+	}
+	if (glGetError() == GL_INVALID_ENUM) {
+		lastError = "passed in wrong shader type";
+		id = -1;
+		return false;
+	}
+	if (id == 0) {
+		lastError = "internal OpenGL error";
+		id = -1;
+		return false;
+	}
+
+	glShaderSource(id, 1, &source, nullptr);
+	{
+		GLint error = 0;
+		glGetShaderiv(id, GL_SHADER_SOURCE_LENGTH, &error);
+		if (error == 0) {
+			lastError = "could not upload shader source to OpenGL";
+			glDeleteShader(id);
+			id = -1;
+			return false;
+		}
+	}
+
+	glCompileShader(id);
+	{
+		GLint error = 0;
+		glGetShaderiv(id, GL_COMPILE_STATUS, &error);
+		if (error == GL_FALSE) {
+			int length = 0;
+			glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
+			char* errorMessage = new char[length + 1];
+			memset(errorMessage, 0, length + 1);
+			int writtenCount = 0;
+			glGetShaderInfoLog(id, length, &writtenCount, errorMessage);
+			lastError = std::string(errorMessage);
+			delete[] errorMessage;
+
+			glDeleteShader(id);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool Shader::parsePath(std::string& pathToParse, GLenum shaderType) {
+	if (pathToParse.find('\\') == std::string::npos && pathToParse.find('/') == std::string::npos)
+		pathToParse = "assets/shaders/" + pathToParse;
+	if (pathToParse.find('.') == std::string::npos) {
+		switch (shaderType) {
+			case GL_FRAGMENT_SHADER:
+				pathToParse += ".frag";
+				break;
+			case GL_VERTEX_SHADER:
+				pathToParse += ".vert";
+				break;
+			default:
+				pathToParse = "";
+				lastError = "shader type not supported";
+				return false;
+		}
+	}
+
+	return true;
+}
+
+std::string Shader::readEntireFile() {
+	struct stat result{};
+
+	if (stat(path->c_str(), &result) == -1) {
+		lastError = "file path '" + path.value() + "' invalid";
+		throw std::runtime_error(lastError);
+	}
+
+	std::ifstream file(path->c_str());
+
+	if (!file) {
+		lastError = "file path '" + path.value() + "' invalid";
+		throw std::runtime_error(lastError);
+	}
+
+	std::string shaderString((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+	if (shaderString.empty()) {
+		lastError = "file wasn't loaded";
+		throw std::runtime_error(lastError);
+	}
+
+	lastTimeStamp = result.st_mtime;
+
+	return shaderString;
 }
