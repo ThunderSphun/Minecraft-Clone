@@ -1,4 +1,4 @@
-#pragma once
+/*#pragma once
 
 #include "shader.h"
 
@@ -41,4 +41,4 @@ public:
 private:
 	std::vector<Shader> shaders;
 	GLuint id = -1;
-};
+};*/

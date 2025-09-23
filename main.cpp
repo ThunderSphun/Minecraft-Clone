@@ -86,37 +86,22 @@ void init() {
 int main() {
 	init();
 
-	Shader vertShader;
-	Shader fragShader;
-
-	try {
-		vertShader = Shader("simple", GL_VERTEX_SHADER);
-	} catch (const std::runtime_error& ex) {
-		std::cerr << ex.what() << std::endl;
-		exit(-1);
-	}
-
-	try {
-		fragShader = Shader("simple", GL_FRAGMENT_SHADER);
-	} catch (const std::runtime_error& ex) {
-		std::cerr << ex.what() << std::endl;
-		exit(-1);
-	}
-
-	ShaderProgram* shaderProgram = new ShaderProgram();
-	shaderProgram
-		->attachShader(vertShader)
-		->attachShader(fragShader)
-		->bindAttribute(0, "a_position")
-		->bindAttribute(1, "a_color")
-		->linkProgram()
-		->useProgram();
+	std::shared_ptr<Minecraft::Assets::Shader> vertShader = Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_VERTEX_SHADER);
+	std::shared_ptr<Minecraft::Assets::Shader> fragShader = Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_FRAGMENT_SHADER);
+	std::shared_ptr<Minecraft::Assets::ShaderProgram> program = Minecraft::Assets::ShaderProgram::create();
+	program->attachShader(vertShader);
+	program->attachShader(fragShader);
+	program->link();
+	program->use();
 
 	ImGuiIO& io = ImGui::GetIO();
 
 	glm::vec3 bgCol(0.9, 0.9, 1.0f);
 
 	while (!glfwWindowShouldClose(window)) {
+		vertShader->update();
+		fragShader->update();
+
 		double time = glfwGetTime();
 		static double pTime = time;
 		glfwPollEvents();
@@ -143,6 +128,4 @@ int main() {
 		pTime = time;
 		glfwSwapBuffers(window);
 	}
-
-	delete shaderProgram;
 }

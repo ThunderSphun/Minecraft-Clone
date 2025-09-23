@@ -1,4 +1,4 @@
-#include "shaderProgram.h"
+/*#include "shaderProgram.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -172,3 +172,4 @@ void ShaderProgram::setUniform(GLint uniform, const glm::vec2& value) const {
 	glUniform2fv(uniform, 1, glm::value_ptr(value));
 }
 
+*/
