@@ -43,7 +43,7 @@ namespace Minecraft::Assets {
 		std::vector<std::weak_ptr<ShaderProgram>> programs = {};
 	};
 
-	class ShaderProgram : std::enable_shared_from_this<ShaderProgram> {
+	class ShaderProgram : public std::enable_shared_from_this<ShaderProgram> {
 	public:
 		ShaderProgram(const ShaderProgram&) = delete;
 		ShaderProgram(ShaderProgram&& other) noexcept;
@@ -53,11 +53,11 @@ namespace Minecraft::Assets {
 
 		static std::shared_ptr<ShaderProgram> create();
 
-		ShaderProgram& attachShader(std::weak_ptr<Shader> shader);
-		ShaderProgram& detachShader(std::weak_ptr<Shader> shader);
-		ShaderProgram& bindAttribute(GLuint index, const std::string& name);
-		ShaderProgram& link();
-		ShaderProgram& use();
+		std::shared_ptr<ShaderProgram> attachShader(std::weak_ptr<Shader> shader);
+		std::shared_ptr<ShaderProgram> detachShader(std::weak_ptr<Shader> shader);
+		std::shared_ptr<ShaderProgram> bindAttribute(GLuint index, const std::string& name);
+		std::shared_ptr<ShaderProgram> link();
+		std::shared_ptr<ShaderProgram> use();
 
 		void update();
 

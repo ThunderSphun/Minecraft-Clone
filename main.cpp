@@ -65,9 +65,9 @@ void init() {
 	io.ConfigViewportsNoTaskBarIcon = true;
 
 	ImGui::StyleColorsDark();
-	ImGuiStyle& style = ImGui::GetStyle();
 
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+		ImGuiStyle& style = ImGui::GetStyle();
 		style.WindowRounding = 0.0f;
 		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 	}
@@ -86,25 +86,25 @@ void init() {
 int main() {
 	init();
 
-	std::shared_ptr<Minecraft::Assets::Shader> vertShader = Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_VERTEX_SHADER);
-	std::shared_ptr<Minecraft::Assets::Shader> fragShader = Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_FRAGMENT_SHADER);
 	std::shared_ptr<Minecraft::Assets::ShaderProgram> program = Minecraft::Assets::ShaderProgram::create();
-	program->attachShader(vertShader);
-	program->attachShader(fragShader);
-	program->link();
-	program->use();
+	program
+		->attachShader(Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_VERTEX_SHADER))
+		->attachShader(Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_FRAGMENT_SHADER))
+		->link()
+		->use();
 
 	ImGuiIO& io = ImGui::GetIO();
 
 	glm::vec3 bgCol(0.9, 0.9, 1.0f);
 
 	while (!glfwWindowShouldClose(window)) {
-		vertShader->update();
-		fragShader->update();
+		program->update();
+
+		glfwPollEvents();
 
 		double time = glfwGetTime();
 		static double pTime = time;
-		glfwPollEvents();
+
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -117,12 +117,16 @@ int main() {
 		ImGui::Text("frame duration: %f", time - pTime);
 		ImGui::End();
 
+		ImGui::ShowDemoWindow();
+
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
 		}
 
 		pTime = time;
