@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 namespace Minecraft::Assets {
 	Shader::Shader(GLenum shaderType) : id(glCreateShader(shaderType)) {

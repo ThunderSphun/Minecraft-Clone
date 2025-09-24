@@ -6,8 +6,13 @@
 #include <string>
 #include <optional>
 #include <filesystem>
+#include <vector>
+#include <memory>
 
 namespace Minecraft::Assets {
+	class Shader;
+	class ShaderProgram;
+
 	class Shader {
 	public:
 		Shader() = delete;
@@ -82,7 +87,7 @@ namespace Minecraft::Assets {
 		ShaderProgram();
 
 		GLuint id = 0;
-	
+
 		std::vector<std::shared_ptr<Shader>> shaders = {};
 	};
 }
