@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 namespace Minecraft::Assets {
 	Shader::Shader(GLenum shaderType) : id(glCreateShader(shaderType)) {
@@ -55,23 +56,32 @@ namespace Minecraft::Assets {
 	}
 
 	void Shader::update() {
-		if (!path)
-			return;
+		if (path) {
+			std::filesystem::file_time_type lastWriteTime = std::filesystem::last_write_time(*path);
+			if (lastWriteTime > lastTimeStamp) {
+				std::shared_ptr<Shader> other = parse(*path);
+				if (!other) {
+					std::cerr << "Failed to recompile changed shader, keeping old one" << std::endl;
+					lastTimeStamp = lastWriteTime;
+				} else {
+					std::swap(*this, *other);
+					std::swap(this->programs, other->programs);
 
-		if (std::filesystem::last_write_time(*path) <= lastTimeStamp)
-			return;
+					for (const std::weak_ptr<Program>& _program : programs) {
+						if (auto program = _program.lock()) {
+							if (std::any_of(program->shaders.begin(), program->shaders.end(), [this](const std::shared_ptr<Shader>& shader) { return shader->id == id; })) {
+								glDetachShader(program->id, other->id);
+								glAttachShader(program->id, this->id);
 
-		std::shared_ptr<Shader> other = parse(*path);
-		if (!other) {
-			std::cerr << "Failed to recompile changed shader, keeping old one" << std::endl;
-			return;
+								program->link();
+							}
+						}
+					}
+				}
+			}
 		}
 
-		std::swap(*this, *other);
-
-		std::vector<GLuint> attachedShaders;
-
-		std::erase_if(programs, [this, &attachedShaders](std::weak_ptr<ShaderProgram> _program) {
+		std::erase_if(programs, [this](std::weak_ptr<Shader::Program> _program) {
 			auto program = _program.lock();
 			if (!program)
 				return true;
@@ -85,15 +95,6 @@ namespace Minecraft::Assets {
 
 			return false;
 		});
-
-		for (auto& _program : programs) {
-			if (auto program = _program.lock()) {
-				glDetachShader(program->id, other->id);
-				glAttachShader(program->id, this->id);
-
-				program->link();
-			}
-		}
 	}
 
 	bool Shader::loadShaderSource(const std::string& source) {

@@ -11,7 +11,6 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/string_cast.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -88,7 +87,7 @@ void init() {
 int main() {
 	init();
 
-	std::shared_ptr<Minecraft::Assets::ShaderProgram> program = Minecraft::Assets::ShaderProgram::create();
+	std::shared_ptr<Minecraft::Assets::Shader::Program> program = Minecraft::Assets::Shader::Program::create();
 	program
 		->attachShader(Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_VERTEX_SHADER))
 		->attachShader(Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_FRAGMENT_SHADER))
@@ -107,13 +106,12 @@ int main() {
 
 	glm::mat4x4 mvp = proj * view * model;
 
-	program->setUniform("mvpMatrix", mvp);
-
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 
 	while (!glfwWindowShouldClose(window)) {
 		program->update();
+		program->setUniform("mvpMatrix", mvp);
 
 		glfwPollEvents();
 
@@ -130,9 +128,9 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		static glm::vec3 triangleVertices[] = {
-			{glm::cos(0.0f * glm::two_pi<float>() / 3), glm::sin(0.0f * glm::two_pi<float>() / 3), 1.0f},
-			{glm::cos(1.0f * glm::two_pi<float>() / 3), glm::sin(1.0f * glm::two_pi<float>() / 3), 1.0f},
-			{glm::cos(2.0f * glm::two_pi<float>() / 3), glm::sin(2.0f * glm::two_pi<float>() / 3), 1.0f},
+			{-0.5f, -0.5f, 1.0f},
+			{+0.0f, +0.5f, 1.0f},
+			{+0.5f, -0.5f, 1.0f},
 		};
 		static glm::vec3 triangleColors[] = {
 			{1, 0, 0},

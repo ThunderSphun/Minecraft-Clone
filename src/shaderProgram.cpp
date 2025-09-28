@@ -6,12 +6,12 @@
 #include <algorithm>
 
 namespace Minecraft::Assets {
-	ShaderProgram::ShaderProgram() : id(glCreateProgram()) {
+	Shader::Program::Program() : id(glCreateProgram()) {
 		if (id == 0)
 			std::cerr << "unknown error from glCreateProgram" << std::endl;
 	}
 
-	ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept {
+	Shader::Program::Program(Program&& other) noexcept {
 		if (id != 0)
 			glDeleteProgram(id);
 
@@ -22,7 +22,7 @@ namespace Minecraft::Assets {
 		other.shaders = {};
 	}
 
-	ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
+	Shader::Program& Shader::Program::operator=(Program&& other) noexcept {
 		if (this != &other) {
 			if (id != 0)
 				glDeleteProgram(id);
@@ -36,16 +36,16 @@ namespace Minecraft::Assets {
 		return *this;
 	}
 
-	ShaderProgram::~ShaderProgram() {
+	Shader::Program::~Program() {
 		if (id != 0)
 			glDeleteProgram(id);
 	}
 
-	std::shared_ptr<ShaderProgram> ShaderProgram::create() {
-		return std::shared_ptr<ShaderProgram>(new ShaderProgram());
+	std::shared_ptr<Shader::Program> Shader::Program::create() {
+		return std::shared_ptr<Shader::Program>(new Shader::Program());
 	}
 
-	std::shared_ptr<ShaderProgram> ShaderProgram::attachShader(std::weak_ptr<Shader> _shader) {
+	std::shared_ptr<Shader::Program> Shader::Program::attachShader(std::weak_ptr<Shader> _shader) {
 		if (auto shader = _shader.lock()) {
 			GLint shaderCount = 0;
 			glGetProgramiv(id, GL_ATTACHED_SHADERS, &shaderCount);
@@ -81,7 +81,7 @@ namespace Minecraft::Assets {
 		return shared_from_this();
 	}
 
-	std::shared_ptr<ShaderProgram> ShaderProgram::detachShader(std::weak_ptr<Shader> _shader) {
+	std::shared_ptr<Shader::Program> Shader::Program::detachShader(std::weak_ptr<Shader> _shader) {
 		if (auto shader = _shader.lock()) {
 			GLint shaderCount = 0;
 			glGetProgramiv(id, GL_ATTACHED_SHADERS, &shaderCount);
@@ -103,16 +103,16 @@ namespace Minecraft::Assets {
 							std::cerr << "provided program '" << id << "' isn't a program" << std::endl;
 						if (!glIsShader(shader->id))
 							std::cerr << "provided shader '" << shader->id << "' isn't a shader" << std::endl;
-						// error code is technicly possible when the shader is already attached to the program,
+						// error code is technicly possible when the shader is not attached to the program,
 						// but we explicitly check for it not being the case
 
 						return shared_from_this();
 					}
 				}
-				std::shared_ptr<ShaderProgram> thisPtr;
-				std::erase_if(shader->programs, [thisPtr](const std::weak_ptr<ShaderProgram>& _program) {
+
+				std::erase_if(shader->programs, [this](const std::weak_ptr<Shader::Program>& _program) {
 					if (auto program = _program.lock())
-						return program == thisPtr;
+						return program->id == id;
 					return false;
 					});
 				std::erase(shaders, shader);
@@ -122,7 +122,7 @@ namespace Minecraft::Assets {
 		return shared_from_this();
 	}
 
-	std::shared_ptr<ShaderProgram> ShaderProgram::bindAttribute(GLuint index, const std::string& name) {
+	std::shared_ptr<Shader::Program> Shader::Program::bindAttribute(GLuint index, const std::string& name) {
 		if (name.starts_with("gl_")) {
 			std::cerr << "attribute '" << name << "' starts with reserved prefix 'gl_'" << std::endl;
 			return shared_from_this();
@@ -137,14 +137,13 @@ namespace Minecraft::Assets {
 		return shared_from_this();
 	}
 
-	std::shared_ptr<ShaderProgram> ShaderProgram::link() {
+	std::shared_ptr<Shader::Program> Shader::Program::link() {
 		glLinkProgram(id);
-
 		{
-			GLint error = 0;
-			glGetProgramiv(id, GL_LINK_STATUS, &error);
+			GLint isLinked = 0;
+			glGetProgramiv(id, GL_LINK_STATUS, &isLinked);
 
-			if (error == GL_FALSE) {
+			if (isLinked == GL_FALSE) {
 				int length = 0;
 				glGetProgramiv(id, GL_INFO_LOG_LENGTH, &length);
 				std::string errorMessage(length, '\0');
@@ -157,7 +156,7 @@ namespace Minecraft::Assets {
 		return shared_from_this();
 	}
 
-	std::shared_ptr<ShaderProgram> ShaderProgram::use() {
+	std::shared_ptr<Shader::Program> Shader::Program::use() {
 		GLint isLinked = 0;
 		glGetProgramiv(id, GL_LINK_STATUS, &isLinked);
 
@@ -169,44 +168,21 @@ namespace Minecraft::Assets {
 		return shared_from_this();
 	}
 
-	void ShaderProgram::update() {
+	void Shader::Program::update() {
 		for (auto& shader : shaders)
 			shader->update();
 	}
 
-	GLint ShaderProgram::getUniform(const std::string& uniform) {
+	GLint Shader::Program::getUniform(const std::string& uniform) {
 		return glGetUniformLocation(id, uniform.c_str());
-	}
+}
 
-	void ShaderProgram::setUniform(GLint uniform, bool value) {
-		glUniform1i(uniform, value ? GL_TRUE : GL_FALSE);
-	}
-
-	void ShaderProgram::setUniform(GLint uniform, int value) {
-		glUniform1i(uniform, value);
-	}
-
-	void ShaderProgram::setUniform(GLint uniform, float value) {
-		glUniform1f(uniform, value);
-	}
-
-	void ShaderProgram::setUniform(GLint uniform, const glm::mat4& value) {
-		glUniformMatrix4fv(uniform, 1, GL_FALSE, glm::value_ptr(value));
-	}
-
-	void ShaderProgram::setUniform(GLint uniform, const glm::mat3& value) {
-		glUniformMatrix3fv(uniform, 1, GL_FALSE, glm::value_ptr(value));
-	}
-
-	void ShaderProgram::setUniform(GLint uniform, const glm::vec4& value) {
-		glUniform4fv(uniform, 1, glm::value_ptr(value));
-	}
-
-	void ShaderProgram::setUniform(GLint uniform, const glm::vec3& value) {
-		glUniform3fv(uniform, 1, glm::value_ptr(value));
-	}
-
-	void ShaderProgram::setUniform(GLint uniform, const glm::vec2& value) {
-		glUniform2fv(uniform, 1, glm::value_ptr(value));
-	}
+	void Shader::Program::setUniform(GLint uniform, bool value) { glUniform1i(uniform, value ? GL_TRUE : GL_FALSE); }
+	void Shader::Program::setUniform(GLint uniform, int value) { glUniform1i(uniform, value); }
+	void Shader::Program::setUniform(GLint uniform, float value) { glUniform1f(uniform, value); }
+	void Shader::Program::setUniform(GLint uniform, const glm::mat4& value) { glUniformMatrix4fv(uniform, 1, GL_FALSE, glm::value_ptr(value)); }
+	void Shader::Program::setUniform(GLint uniform, const glm::mat3& value) { glUniformMatrix3fv(uniform, 1, GL_FALSE, glm::value_ptr(value)); }
+	void Shader::Program::setUniform(GLint uniform, const glm::vec4& value) { glUniform4fv(uniform, 1, glm::value_ptr(value)); }
+	void Shader::Program::setUniform(GLint uniform, const glm::vec3& value) { glUniform3fv(uniform, 1, glm::value_ptr(value)); }
+	void Shader::Program::setUniform(GLint uniform, const glm::vec2& value) { glUniform2fv(uniform, 1, glm::value_ptr(value)); }
 }
