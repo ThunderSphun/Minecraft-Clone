@@ -2,13 +2,13 @@
 
 uniform float time = 0;
 
-in vec3 color;
-out vec3 fragColor;
+in vec4 color;
+out vec4 fragColor;
 
 void main() {
-	vec3 c = color;
+	vec4 c = color;
 
-	c *= .5 * (sin(time) + 1.);
+	//c *= (sin(time) + 1.) / 2;
 
 	fragColor = c;
 }

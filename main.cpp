@@ -11,6 +11,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -48,6 +49,10 @@ void init() {
 			exit(-1);
 		}
 	}
+
+	glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int width, int height) {
+		glViewport(0, 0, width, height);
+	});
 
 	cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
 	std::atexit([](){glfwDestroyCursor(cursor);});
@@ -101,13 +106,66 @@ int main() {
 	glm::vec3 bgCol(0.9, 0.9, 1.0f);
 
 	glm::mat4x4 model = glm::mat4x4(1);
-	glm::mat4x4 view = glm::lookAt(glm::vec3(0, 0, -1), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	glm::mat4x4 proj = glm::perspective(45.0f, 800 / 600.0f, 0.1f, 100.0f);
+	glm::mat4x4 view = glm::lookAt(glm::vec3(0, 1.666, -5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	glm::mat4x4 proj = glm::perspective(45.0f, 1080 / 720.0f, 0.1f, 100.0f);
 
 	glm::mat4x4 mvp = proj * view * model;
 
+	GLuint VAO = 0;
+	GLuint VBO[] = { 0, 0 };
+	GLuint EBO = 0;
+
+	glm::vec3 vertices[] = {
+		{-0.5f, -0.5f, -0.5f},
+		{-0.5f, -0.5f, +0.5f},
+		{-0.5f, +0.5f, -0.5f},
+		{-0.5f, +0.5f, +0.5f},
+		{+0.5f, -0.5f, -0.5f},
+		{+0.5f, -0.5f, +0.5f},
+		{+0.5f, +0.5f, -0.5f},
+		{+0.5f, +0.5f, +0.5f},
+	};
+	glm::vec4 colors[] = {
+		{1, 0, 0, 1},
+		{0, 1, 0, 1},
+		{0, 0, 1, 1},
+		{0, 0, 0, 1},
+		{0, 1, 1, 1},
+		{1, 0, 1, 1},
+		{1, 1, 0, 1},
+		{1, 1, 1, 1},
+	};
+	uint8_t indices[] = {
+		0, 1, 2,  1, 2, 3,
+		4, 5, 6,  5, 6, 7,
+		0, 1, 4,  1, 4, 5,
+		2, 3, 6,  3, 6, 7,
+		0, 2, 4,  2, 4, 6,
+		1, 3, 5,  3, 5, 7,
+	};
+
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	glGenBuffers(2, VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
 	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
 	glEnableVertexAttribArray(1);
+
+	glGenBuffers(1, &EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	glEnable(GL_DEPTH_TEST);
 
 	while (!glfwWindowShouldClose(window)) {
 		program->update();
@@ -127,23 +185,25 @@ int main() {
 		glClearColor(bgCol.r, bgCol.g, bgCol.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		static glm::vec3 triangleVertices[] = {
-			{-0.5f, -0.5f, 1.0f},
-			{+0.0f, +0.5f, 1.0f},
-			{+0.5f, -0.5f, 1.0f},
-		};
-		static glm::vec3 triangleColors[] = {
-			{1, 0, 0},
-			{0, 1, 0},
-			{0, 0, 1},
-		};
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), triangleVertices);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), triangleColors);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, 0);
 
 		ImGui::Begin("Debug menu");
 		ImGui::ColorEdit3("clear color", glm::value_ptr(bgCol));
 		ImGui::Text("frame duration: %f", time - pTime);
+		static float pitch = 0;
+		static float yaw = 0;
+		bool changedAngle = false;
+		changedAngle |= ImGui::SliderAngle("pitch", &pitch);
+		changedAngle |= ImGui::SliderAngle("Yaw", &yaw);
+		if (changedAngle) {
+			float x = 5.0f * cos(pitch) * sin(yaw);
+			float y = 5.0f * sin(pitch);
+			float z = 5.0f * cos(pitch) * cos(yaw);
+
+			glm::mat4 view = glm::lookAt({ x, y, z }, glm::vec3(0), { 0.0f, 1.0f, 0.0f });
+			mvp = proj * view * model;
+		}
 		ImGui::End();
 
 		ImGui::ShowDemoWindow();
