@@ -16,6 +16,7 @@ namespace Minecraft::Assets {
 	class Shader {
 	public:
 		Shader(GLenum shaderType);
+
 		Shader() = delete;
 		Shader(const Shader&) = delete;
 		Shader(Shader&& other) noexcept;

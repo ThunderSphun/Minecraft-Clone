@@ -1,6 +1,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include "shader.h"
+#include "renderObject.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -111,18 +112,14 @@ int main() {
 
 	glm::mat4x4 mvp = proj * view * model;
 
-	GLuint VAO = 0;
-	GLuint VBO[] = { 0, 0 };
-	GLuint EBO = 0;
-
 	glm::vec3 vertices[] = {
 		{-0.5f, -0.5f, -0.5f},
-		{-0.5f, -0.5f, +0.5f},
 		{-0.5f, +0.5f, -0.5f},
-		{-0.5f, +0.5f, +0.5f},
 		{+0.5f, -0.5f, -0.5f},
-		{+0.5f, -0.5f, +0.5f},
 		{+0.5f, +0.5f, -0.5f},
+		{-0.5f, -0.5f, +0.5f},
+		{-0.5f, +0.5f, +0.5f},
+		{+0.5f, -0.5f, +0.5f},
 		{+0.5f, +0.5f, +0.5f},
 	};
 	glm::vec4 colors[] = {
@@ -135,35 +132,29 @@ int main() {
 		{1, 1, 0, 1},
 		{1, 1, 1, 1},
 	};
-	uint8_t indices[] = {
-		0, 1, 2,  1, 2, 3,
-		4, 5, 6,  5, 6, 7,
-		0, 1, 4,  1, 4, 5,
-		2, 3, 6,  3, 6, 7,
-		0, 2, 4,  2, 4, 6,
-		1, 3, 5,  3, 5, 7,
+	uint32_t indices[] = {
+		0, 1, 2,  1, 2, 3, // back
+		4, 5, 6,  5, 6, 7, // front
+		0, 1, 4,  1, 4, 5, // left
+		2, 3, 6,  3, 6, 7, // right
+		0, 2, 4,  2, 4, 6, // bottom
+		1, 3, 5,  3, 5, 7, // top
 	};
 
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
+	Minecraft::Assets::RenderObject cube = Minecraft::Assets::RenderObject::create([vertices, colors](GLuint vbo){
+		glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors), nullptr, GL_STATIC_DRAW);
+		glNamedBufferSubData(vbo, 0, sizeof(vertices), vertices);
+		glNamedBufferSubData(vbo, sizeof(vertices), sizeof(colors), colors);
 
-	glGenBuffers(2, VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
-	glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*) sizeof(vertices));
+		glEnableVertexAttribArray(1);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
-	glEnableVertexAttribArray(1);
-
-	glGenBuffers(1, &EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+		return 36;
+	}, [indices](GLuint ebo){
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	});
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -185,8 +176,7 @@ int main() {
 		glClearColor(bgCol.r, bgCol.g, bgCol.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_BYTE, 0);
+		cube.draw();
 
 		ImGui::Begin("Debug menu");
 		ImGui::ColorEdit3("clear color", glm::value_ptr(bgCol));
@@ -194,8 +184,18 @@ int main() {
 		static float pitch = 0;
 		static float yaw = 0;
 		bool changedAngle = false;
-		changedAngle |= ImGui::SliderAngle("pitch", &pitch);
+		changedAngle |= ImGui::SliderAngle("pitch", &pitch, -90, 90);
+		ImGui::SameLine();
+		if (ImGui::Button("reset##pitch")) {
+			pitch = 0;
+			changedAngle = true;
+		}
 		changedAngle |= ImGui::SliderAngle("Yaw", &yaw);
+		ImGui::SameLine();
+		if (ImGui::Button("reset##yaw")) {
+			yaw = 0;
+			changedAngle = true;
+		}
 		if (changedAngle) {
 			float x = 5.0f * cos(pitch) * sin(yaw);
 			float y = 5.0f * sin(pitch);
