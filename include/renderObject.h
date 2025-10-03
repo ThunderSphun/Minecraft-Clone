@@ -6,6 +6,29 @@
 #include <vector>
 
 namespace Minecraft::Assets {
+	class VBO {
+	public:
+		VBO(const VBO&) = delete;
+		VBO(VBO&& other) noexcept;
+		VBO& operator=(const VBO&) = delete;
+		VBO& operator=(VBO&& other) noexcept;
+		~VBO();
+
+		static VBO create(std::function<size_t(GLuint)> vertices);
+
+		void bind();
+		void unbind();
+
+		void draw(GLenum shape = GL_TRIANGLES);
+
+	private:
+		VBO();
+
+		GLuint vbo = 0;
+
+		size_t vertexCount = 0;
+	};
+
 	class RenderObject {
 	public:
 		RenderObject(const RenderObject&) = delete;
@@ -21,7 +44,7 @@ namespace Minecraft::Assets {
 		void bind();
 		void unbind();
 
-		void draw();
+		void draw(GLenum shape = GL_TRIANGLES);
 
 	private:
 		RenderObject() = default;

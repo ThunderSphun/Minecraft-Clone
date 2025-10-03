@@ -33,7 +33,7 @@ void init() {
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
 	window = glfwCreateWindow(1080, 720, "Minecraft", nullptr, nullptr);
 	if (window == nullptr)
@@ -141,6 +141,48 @@ int main() {
 		1, 3, 5,  3, 5, 7, // top
 	};
 
+	Minecraft::Assets::VBO vbo = Minecraft::Assets::VBO::create([](GLuint vbo) {
+		glm::vec3 vertices[] = {
+			{-0.5f, -0.5f, -0.5f},
+			{-0.5f,  0.5f, -0.5f},
+			{ 0.5f,  0.5f, -0.5f},
+			{ 0.5f, -0.5f, -0.5f},
+
+			{-0.5f, -0.5f,  0.5f},
+			{ 0.5f, -0.5f,  0.5f},
+			{ 0.5f,  0.5f,  0.5f},
+			{-0.5f,  0.5f,  0.5f},
+
+
+			{-0.5f, -0.5f, -0.5f},
+			{ 0.5f, -0.5f, -0.5f},
+			{ 0.5f, -0.5f,  0.5f},
+			{-0.5f, -0.5f,  0.5f},
+
+			{-0.5f,  0.5f, -0.5f},
+			{-0.5f,  0.5f,  0.5f},
+			{ 0.5f,  0.5f,  0.5f},
+			{ 0.5f,  0.5f, -0.5f},
+
+
+			{-0.5f, -0.5f, -0.5f},
+			{-0.5f, -0.5f,  0.5f},
+			{-0.5f,  0.5f,  0.5f},
+			{-0.5f,  0.5f, -0.5f},
+
+			{ 0.5f, -0.5f, -0.5f},
+			{ 0.5f,  0.5f, -0.5f},
+			{ 0.5f,  0.5f,  0.5f},
+			{ 0.5f, -0.5f,  0.5f},
+		};
+
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
+		glEnableVertexAttribArray(0);
+
+		return sizeof(vertices) / sizeof(vertices[0]);
+	});
+
 	Minecraft::Assets::RenderObject cube = Minecraft::Assets::RenderObject::create([vertices, colors](GLuint vbo){
 		glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors), nullptr, GL_STATIC_DRAW);
 		glNamedBufferSubData(vbo, 0, sizeof(vertices), vertices);
@@ -176,11 +218,16 @@ int main() {
 		glClearColor(bgCol.r, bgCol.g, bgCol.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		cube.draw();
+		static bool useVBO = false;
+		if (useVBO)
+			vbo.draw(GL_QUADS);
+		else
+			cube.draw();
 
 		ImGui::Begin("Debug menu");
 		ImGui::ColorEdit3("clear color", glm::value_ptr(bgCol));
 		ImGui::Text("frame duration: %f", time - pTime);
+		ImGui::Checkbox("use VBO instead of VAO", &useVBO);
 		static float pitch = 0;
 		static float yaw = 0;
 		bool changedAngle = false;

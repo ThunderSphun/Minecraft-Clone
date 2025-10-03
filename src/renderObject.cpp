@@ -3,6 +3,66 @@
 #include <iostream>
 
 namespace Minecraft::Assets {
+	VBO::VBO() {
+		glGenBuffers(1, &vbo);
+	}
+
+	VBO::VBO(VBO&& other) noexcept {
+		if (vbo)
+			glDeleteBuffers(1, &vbo);
+	
+		this->vbo = other.vbo;
+		this->vertexCount = other.vertexCount;
+
+		other.vbo = 0;
+		other.vertexCount = 0;
+	}
+
+	VBO& VBO::operator=(VBO&& other) noexcept {
+		if (this != &other) {
+			if (vbo)
+				glDeleteBuffers(1, &vbo);
+
+			this->vbo = other.vbo;
+			this->vertexCount = other.vertexCount;
+
+			other.vbo = 0;
+			other.vertexCount = 0;
+		}
+		return *this;
+	}
+
+	VBO::~VBO() {
+		if (vbo)
+			glDeleteBuffers(1, &vbo);
+	}
+
+	VBO VBO::create(std::function<size_t(GLuint)> vertices) {
+		VBO vbo{};
+
+		vbo.bind();
+		vbo.vertexCount = vertices(vbo.vbo);
+		vbo.unbind();
+
+		return vbo;
+	}
+
+	void VBO::bind() {
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	}
+
+	void VBO::unbind() {
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+
+	void VBO::draw(GLenum shape) {
+		bind();
+		glDrawArrays(shape, 0, vertexCount);
+		unbind();
+	}
+}
+
+namespace Minecraft::Assets {
 	RenderObject::RenderObject(RenderObject&& other) noexcept {
 		if (vao)
 			glDeleteVertexArrays(1, &vao);
@@ -110,12 +170,12 @@ namespace Minecraft::Assets {
 		glBindVertexArray(0);
 	}
 
-	void RenderObject::draw() {
+	void RenderObject::draw(GLenum shape) {
 		bind();
 		if (ebo)
-			glDrawElements(GL_TRIANGLES, vertexCount, GL_UNSIGNED_INT, 0);
+			glDrawElements(shape, vertexCount, GL_UNSIGNED_INT, 0);
 		else
-			glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+			glDrawArrays(shape, 0, vertexCount);
 		unbind();
 	}
 }
