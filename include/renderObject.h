@@ -19,6 +19,8 @@ namespace Minecraft::Assets {
 		void bind();
 		void unbind();
 
+		/// draws the vbo
+		/// only works with opengl in compat mode
 		void draw(GLenum shape = GL_TRIANGLES);
 
 	private:
@@ -29,17 +31,39 @@ namespace Minecraft::Assets {
 		size_t vertexCount = 0;
 	};
 
-	class RenderObject {
+	class EBO {
 	public:
-		RenderObject(const RenderObject&) = delete;
-		RenderObject(RenderObject&& other) noexcept;
-		RenderObject& operator=(const RenderObject&) = delete;
-		RenderObject& operator=(RenderObject&& other) noexcept;
-		~RenderObject();
+		EBO(const EBO&) = delete;
+		EBO(EBO&& other) noexcept;
+		EBO& operator=(const EBO&) = delete;
+		EBO& operator=(EBO&& other) noexcept;
+		~EBO();
 
-		static RenderObject create(std::function<size_t(GLuint)> vertices);
-		static RenderObject create(std::function<size_t(GLuint)> vertices, std::function<void(GLuint)> indices);
-		static RenderObject create(std::function<size_t(GLuint)> vertices, std::vector<GLuint> indices);
+		static EBO create(std::function<size_t(GLuint)> indices);
+		static EBO create(std::vector<GLuint> indices);
+
+		void bind();
+		void unbind();
+
+	private:
+		EBO();
+
+		GLuint ebo = 0;
+
+		size_t indicesCount = 0;
+	};
+
+	class VAO {
+	public:
+		VAO(const VAO&) = delete;
+		VAO(VAO&& other) noexcept;
+		VAO& operator=(const VAO&) = delete;
+		VAO& operator=(VAO&& other) noexcept;
+		~VAO();
+
+		static VAO create(std::function<size_t(GLuint)> vertices);
+		static VAO create(std::function<size_t(GLuint)> vertices, std::function<void(GLuint)> indices);
+		static VAO create(std::function<size_t(GLuint)> vertices, std::vector<GLuint> indices);
 
 		void bind();
 		void unbind();
@@ -47,7 +71,7 @@ namespace Minecraft::Assets {
 		void draw(GLenum shape = GL_TRIANGLES);
 
 	private:
-		RenderObject() = default;
+		VAO() = default;
 
 		GLuint vao = 0;
 		GLuint* vbos = nullptr;

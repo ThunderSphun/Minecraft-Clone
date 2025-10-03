@@ -33,7 +33,7 @@ void init() {
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 
 	window = glfwCreateWindow(1080, 720, "Minecraft", nullptr, nullptr);
 	if (window == nullptr)
@@ -141,49 +141,28 @@ int main() {
 		1, 3, 5,  3, 5, 7, // top
 	};
 
-	Minecraft::Assets::VBO vbo = Minecraft::Assets::VBO::create([](GLuint vbo) {
-		glm::vec3 vertices[] = {
-			{-0.5f, -0.5f, -0.5f},
-			{-0.5f,  0.5f, -0.5f},
-			{ 0.5f,  0.5f, -0.5f},
-			{ 0.5f, -0.5f, -0.5f},
-
-			{-0.5f, -0.5f,  0.5f},
-			{ 0.5f, -0.5f,  0.5f},
-			{ 0.5f,  0.5f,  0.5f},
-			{-0.5f,  0.5f,  0.5f},
-
-
-			{-0.5f, -0.5f, -0.5f},
-			{ 0.5f, -0.5f, -0.5f},
-			{ 0.5f, -0.5f,  0.5f},
-			{-0.5f, -0.5f,  0.5f},
-
-			{-0.5f,  0.5f, -0.5f},
-			{-0.5f,  0.5f,  0.5f},
-			{ 0.5f,  0.5f,  0.5f},
-			{ 0.5f,  0.5f, -0.5f},
-
-
-			{-0.5f, -0.5f, -0.5f},
-			{-0.5f, -0.5f,  0.5f},
-			{-0.5f,  0.5f,  0.5f},
-			{-0.5f,  0.5f, -0.5f},
-
-			{ 0.5f, -0.5f, -0.5f},
-			{ 0.5f,  0.5f, -0.5f},
-			{ 0.5f,  0.5f,  0.5f},
-			{ 0.5f, -0.5f,  0.5f},
-		};
-
+	Minecraft::Assets::VBO vbo1 = Minecraft::Assets::VBO::create([vertices](GLuint vbo) {
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
 		glEnableVertexAttribArray(0);
 
 		return sizeof(vertices) / sizeof(vertices[0]);
 	});
+	Minecraft::Assets::VBO vbo2 = Minecraft::Assets::VBO::create([colors](GLuint vbo) {
+		glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
+		glEnableVertexAttribArray(1);
 
-	Minecraft::Assets::RenderObject cube = Minecraft::Assets::RenderObject::create([vertices, colors](GLuint vbo){
+		return sizeof(colors) / sizeof(colors[0]);
+	});
+
+	Minecraft::Assets::EBO ebo = Minecraft::Assets::EBO::create([indices](GLuint ebo) {
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+		return sizeof(indices) / sizeof(indices[0]);
+	});
+
+	Minecraft::Assets::VAO cube = Minecraft::Assets::VAO::create([vertices, colors](GLuint vbo){
 		glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors), nullptr, GL_STATIC_DRAW);
 		glNamedBufferSubData(vbo, 0, sizeof(vertices), vertices);
 		glNamedBufferSubData(vbo, sizeof(vertices), sizeof(colors), colors);
@@ -219,9 +198,15 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		static bool useVBO = false;
-		if (useVBO)
-			vbo.draw(GL_QUADS);
-		else
+		if (useVBO) {
+			vbo1.bind();
+			vbo2.bind();
+			ebo.bind();
+			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+			ebo.unbind();
+			vbo1.unbind();
+			vbo2.unbind();
+		} else
 			cube.draw();
 
 		ImGui::Begin("Debug menu");
