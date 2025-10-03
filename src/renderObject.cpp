@@ -1,5 +1,7 @@
 #include "renderObject.h"
 
+#include <iostream>
+
 namespace Minecraft::Assets {
 	RenderObject::RenderObject(RenderObject&& other) noexcept {
 		if (vao)
@@ -65,72 +67,39 @@ namespace Minecraft::Assets {
 		RenderObject obj{};
 
 		glGenVertexArrays(1, &obj.vao);
-		glBindVertexArray(obj.vao);
-
 		obj.vboCount = 1;
 		obj.vbos = new GLuint[obj.vboCount];
 		glGenBuffers(obj.vboCount, obj.vbos);
+
+		obj.bind();
 		glBindBuffer(GL_ARRAY_BUFFER, obj.vbos[0]);
-
 		obj.vertexCount = vertices(obj.vbos[0]);
-
 		obj.unbind();
 
-		return std::move(obj);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		return obj;
 	}
 
 	RenderObject RenderObject::create(std::function<size_t(GLuint)> vertices, std::function<void(GLuint)> indices) {
 		RenderObject obj = create(vertices);
 
-		obj.bind();
-
 		glGenBuffers(1, &obj.ebo);
+		
+		obj.bind();
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj.ebo);
 		indices(obj.ebo);
-
 		obj.unbind();
+
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-		return std::move(obj);
+		return obj;
 	}
 
-	RenderObject RenderObject::create(std::vector<std::function<size_t(GLuint*)>> vertices) {
-		if (vertices.size() == 0)
-			return RenderObject{};
-		if (vertices.size() == 1)
-			return create([vertices](GLuint vbo) -> size_t { return vertices[0](&vbo); });
-
-		RenderObject obj{};
-
-		glGenVertexArrays(1, &obj.vao);
-		glBindVertexArray(obj.vao);
-
-		obj.vboCount = vertices.size();
-		obj.vbos = new GLuint[obj.vboCount];
-		glGenBuffers(obj.vboCount, obj.vbos);
-
-		for (size_t i = 0; i < obj.vboCount; i++) {
-			glBindBuffer(GL_ARRAY_BUFFER, obj.vbos[i]);
-			obj.vertexCount = vertices[i](obj.vbos);
-		}
-
-		obj.unbind();
-
-		return std::move(obj);
-	}
-
-	RenderObject RenderObject::create(std::vector<std::function<size_t(GLuint*)>> vertices, std::function<void(GLuint)> indices) {
-		RenderObject obj = create(vertices);
-
-		obj.bind();
-
-		glGenBuffers(1, &obj.ebo);
-		indices(obj.ebo);
-
-		obj.unbind();
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		return std::move(obj);
+	RenderObject RenderObject::create(std::function<size_t(GLuint)> vertices, std::vector<GLuint> indices) {
+		return create(vertices, [indices](GLuint ebo) {
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
+		});
 	}
 
 	void RenderObject::bind() {

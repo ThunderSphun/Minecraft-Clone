@@ -16,8 +16,7 @@ namespace Minecraft::Assets {
 
 		static RenderObject create(std::function<size_t(GLuint)> vertices);
 		static RenderObject create(std::function<size_t(GLuint)> vertices, std::function<void(GLuint)> indices);
-		static RenderObject create(std::vector<std::function<size_t(GLuint*)>> vertices);
-		static RenderObject create(std::vector<std::function<size_t(GLuint*)>> vertices, std::function<void(GLuint)> indices);
+		static RenderObject create(std::function<size_t(GLuint)> vertices, std::vector<GLuint> indices);
 
 		void bind();
 		void unbind();
