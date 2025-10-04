@@ -15,7 +15,7 @@ namespace Minecraft::Assets {
 		VBO& operator=(VBO&& other) noexcept;
 		~VBO();
 
-		static VBO create(std::function<size_t(GLuint)> vertices);
+		static VBO create(const std::function<size_t(GLuint)>& vertices);
 
 		void bind();
 		void unbind();
@@ -42,8 +42,8 @@ namespace Minecraft::Assets {
 		EBO& operator=(EBO&& other) noexcept;
 		~EBO();
 
-		static EBO create(std::function<size_t(GLuint)> indices);
-		static EBO create(std::vector<GLuint> indices);
+		static EBO create(const std::function<size_t(GLuint)>& indices);
+		static EBO create(const std::vector<GLuint>& indices);
 
 		void bind();
 		void unbind();
@@ -66,10 +66,10 @@ namespace Minecraft::Assets {
 		VAO& operator=(VAO&& other) noexcept;
 		~VAO();
 
-		static VAO create(std::function<VBO()> vbo);
-		static VAO create(std::function<VBO()> vbo, std::function<EBO()> ebo);
-		static VAO create(std::vector<std::function<VBO()>> vbos);
-		static VAO create(std::vector<std::function<VBO()>> vbos, std::function<EBO()> ebo);
+		static VAO create(const std::function<VBO()>& vbo);
+		static VAO create(const std::function<VBO()>& vbo, const std::function<EBO()>& ebo);
+		static VAO create(const std::vector<std::function<VBO()>>& vbos);
+		static VAO create(const std::vector<std::function<VBO()>>& vbos, const std::function<EBO()>& ebo);
 
 		void bind();
 		void unbind();

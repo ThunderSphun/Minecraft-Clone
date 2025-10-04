@@ -33,7 +33,7 @@ void init() {
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	window = glfwCreateWindow(1080, 720, "Minecraft", nullptr, nullptr);
 	if (window == nullptr)
@@ -193,20 +193,6 @@ int main() {
 			});
 		}
 	);
-	/*Minecraft::Assets::VAO cube = Minecraft::Assets::VAO::create([vertices, colors](GLuint vbo){
-		glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors), nullptr, GL_STATIC_DRAW);
-		glNamedBufferSubData(vbo, 0, sizeof(vertices), vertices);
-		glNamedBufferSubData(vbo, sizeof(vertices), sizeof(colors), colors);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*) sizeof(vertices));
-		glEnableVertexAttribArray(1);
-
-		return 36;
-	}, [indices](GLuint ebo){
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-	});*/
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -230,11 +216,11 @@ int main() {
 		glClearColor(bgCol.r, bgCol.g, bgCol.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		model = glm::translate(glm::mat4(1), { -1, 0, 0 });
+		model = glm::scale(glm::translate(glm::mat4(1), { -1, 0, 0 }), { +1, 1, 1 });
 		program->setUniform("modelMatrix", model);
 		cube1.draw();
 
-		model = glm::translate(glm::mat4(1), { 1, 0, 0 });
+		model = glm::scale(glm::translate(glm::mat4(1), { +1, 0, 0 }), { -1, 1, 1 });
 		program->setUniform("modelMatrix", model);
 		cube2.draw();
 
@@ -264,7 +250,6 @@ int main() {
 			float z = 5.0f * cos(pitch) * cos(yaw);
 
 			view = glm::lookAt({ x, y, z }, glm::vec3(0), { 0.0f, 1.0f, 0.0f });
-			program->setUniform("viewMatrix", view);
 		}
 		ImGui::End();
 

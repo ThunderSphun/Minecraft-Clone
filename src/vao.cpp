@@ -41,7 +41,7 @@ namespace Minecraft::Assets {
 			glDeleteVertexArrays(1, &vao);
 	}
 
-	VAO VAO::create(std::function<VBO()> vbo) {
+	VAO VAO::create(const std::function<VBO()>& vbo) {
 		VAO vao{};
 
 		vao.bind();
@@ -56,7 +56,7 @@ namespace Minecraft::Assets {
 		return vao;
 	}
 
-	VAO VAO::create(std::function<VBO()> vbo, std::function<EBO()> ebo) {
+	VAO VAO::create(const std::function<VBO()>& vbo, const std::function<EBO()>& ebo) {
 		VAO vao{};
 
 		vao.bind();
@@ -74,7 +74,7 @@ namespace Minecraft::Assets {
 		return vao;
 	}
 
-	VAO Minecraft::Assets::VAO::create(std::vector<std::function<VBO()>> vbos) {
+	VAO Minecraft::Assets::VAO::create(const std::vector<std::function<VBO()>>& vbos) {
 		if (vbos.size() == 0)
 			return VAO{};
 		if (vbos.size() == 1)
@@ -97,7 +97,7 @@ namespace Minecraft::Assets {
 		return vao;
 	}
 	
-	VAO Minecraft::Assets::VAO::create(std::vector<std::function<VBO()>> vbos, std::function<EBO()> ebo) {
+	VAO Minecraft::Assets::VAO::create(const std::vector<std::function<VBO()>>& vbos, const std::function<EBO()>& ebo) {
 		if (vbos.size() == 0)
 			return VAO{};
 		if (vbos.size() == 1)
@@ -122,45 +122,6 @@ namespace Minecraft::Assets {
 
 		return vao;
 	}
-
-	//VAO VAO::create(std::function<size_t(GLuint)> vertices) {
-	//	VAO obj{};
-
-	//	glGenVertexArrays(1, &obj.vao);
-	//	obj.vboCount = 1;
-	//	obj.vbos = new GLuint[obj.vboCount];
-	//	glGenBuffers(obj.vboCount, obj.vbos);
-
-	//	obj.bind();
-	//	glBindBuffer(GL_ARRAY_BUFFER, obj.vbos[0]);
-	//	obj.vertexCount = vertices(obj.vbos[0]);
-	//	obj.unbind();
-
-	//	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	//	return obj;
-	//}
-
-	//VAO VAO::create(std::function<size_t(GLuint)> vertices, std::function<void(GLuint)> indices) {
-	//	VAO obj = create(vertices);
-
-	//	glGenBuffers(1, &obj.ebo);
-
-	//	obj.bind();
-	//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj.ebo);
-	//	indices(obj.ebo);
-	//	obj.unbind();
-
-	//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	//	return obj;
-	//}
-
-	//VAO VAO::create(std::function<size_t(GLuint)> vertices, std::vector<GLuint> indices) {
-	//	return create(vertices, [indices](GLuint ebo) {
-	//		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
-	//	});
-	//}
 
 	void VAO::bind() {
 		glBindVertexArray(vao);

@@ -37,7 +37,7 @@ namespace Minecraft::Assets {
 			glDeleteBuffers(1, &vbo);
 	}
 
-	VBO VBO::create(std::function<size_t(GLuint)> vertices) {
+	VBO VBO::create(const std::function<size_t(GLuint)>& vertices) {
 		VBO vbo{};
 
 		vbo.bind();

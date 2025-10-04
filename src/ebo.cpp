@@ -37,7 +37,7 @@ namespace Minecraft::Assets {
 			glDeleteBuffers(1, &ebo);
 	}
 
-	EBO EBO::create(std::function<size_t(GLuint)> indices) {
+	EBO EBO::create(const std::function<size_t(GLuint)>& indices) {
 		EBO ebo{};
 
 		ebo.bind();
@@ -47,7 +47,7 @@ namespace Minecraft::Assets {
 		return ebo;
 	}
 
-	EBO EBO::create(std::vector<GLuint> indices) {
+	EBO EBO::create(const std::vector<GLuint>& indices) {
 		return create([indices](GLuint ebo) {
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STATIC_DRAW);
 
