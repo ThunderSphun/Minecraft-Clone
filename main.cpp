@@ -106,11 +106,9 @@ int main() {
 
 	glm::vec3 bgCol(0.9, 0.9, 1.0f);
 
-	glm::mat4x4 model = glm::mat4x4(1);
-	glm::mat4x4 view = glm::lookAt(glm::vec3(0, 1.666, -5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	glm::mat4x4 proj = glm::perspective(45.0f, 1080 / 720.0f, 0.1f, 100.0f);
-
-	glm::mat4x4 mvp = proj * view * model;
+	glm::mat4 model = glm::mat4x4(1);
+	glm::mat4 view = glm::lookAt(glm::vec3(0, 1.666, -5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	glm::mat4 proj = glm::perspective(45.0f, 1080 / 720.0f, 0.1f, 100.0f);
 
 	glm::vec3 vertices[] = {
 		{-0.5f, -0.5f, -0.5f},
@@ -141,28 +139,61 @@ int main() {
 		1, 3, 5,  3, 5, 7, // top
 	};
 
-	Minecraft::Assets::VBO vbo1 = Minecraft::Assets::VBO::create([vertices](GLuint vbo) {
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
-		glEnableVertexAttribArray(0);
+	Minecraft::Assets::VAO cube1 = Minecraft::Assets::VAO::create(
+		[vertices, colors]() {
+			return Minecraft::Assets::VBO::create([vertices, colors](GLuint vbo) {
+				glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors), nullptr, GL_STATIC_DRAW);
+				glNamedBufferSubData(vbo, 0, sizeof(vertices), vertices);
+				glNamedBufferSubData(vbo, sizeof(vertices), sizeof(colors), colors);
 
-		return sizeof(vertices) / sizeof(vertices[0]);
-	});
-	Minecraft::Assets::VBO vbo2 = Minecraft::Assets::VBO::create([colors](GLuint vbo) {
-		glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-		glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
-		glEnableVertexAttribArray(1);
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
+				glEnableVertexAttribArray(0);
+				glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*) sizeof(vertices));
+				glEnableVertexAttribArray(1);
 
-		return sizeof(colors) / sizeof(colors[0]);
-	});
+				return 36;
+			});
+		},
+		[indices]() {
+			return Minecraft::Assets::EBO::create([indices](GLuint ebo) {
+				glNamedBufferData(ebo, sizeof(indices), nullptr, GL_STATIC_DRAW);
+				glNamedBufferSubData(ebo, 0, sizeof(indices), indices);
 
-	Minecraft::Assets::EBO ebo = Minecraft::Assets::EBO::create([indices](GLuint ebo) {
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+				return sizeof(indices) / sizeof(indices[0]);
+			});
+		}
+	);
 
-		return sizeof(indices) / sizeof(indices[0]);
-	});
+	Minecraft::Assets::VAO cube2 = Minecraft::Assets::VAO::create(
+		{
+			[vertices]() {
+				return Minecraft::Assets::VBO::create([vertices](GLuint vbo) {
+					glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
+					glEnableVertexAttribArray(0);
 
-	Minecraft::Assets::VAO cube = Minecraft::Assets::VAO::create([vertices, colors](GLuint vbo){
+					return sizeof(vertices) / sizeof(vertices[0]);
+				});
+			},
+			[colors]() {
+				return Minecraft::Assets::VBO::create([colors](GLuint vbo) {
+					glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+					glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
+					glEnableVertexAttribArray(1);
+
+					return sizeof(colors) / sizeof(colors[0]);
+				});
+			},
+		},
+		[indices]() {
+			return Minecraft::Assets::EBO::create([indices](GLuint ebo) {
+				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+				return sizeof(indices) / sizeof(indices[0]);
+			});
+		}
+	);
+	/*Minecraft::Assets::VAO cube = Minecraft::Assets::VAO::create([vertices, colors](GLuint vbo){
 		glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors), nullptr, GL_STATIC_DRAW);
 		glNamedBufferSubData(vbo, 0, sizeof(vertices), vertices);
 		glNamedBufferSubData(vbo, sizeof(vertices), sizeof(colors), colors);
@@ -175,13 +206,15 @@ int main() {
 		return 36;
 	}, [indices](GLuint ebo){
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-	});
+	});*/
 
 	glEnable(GL_DEPTH_TEST);
 
 	while (!glfwWindowShouldClose(window)) {
 		program->update();
-		program->setUniform("mvpMatrix", mvp);
+		program->setUniform("modelMatrix", model);
+		program->setUniform("viewMatrix", view);
+		program->setUniform("projectionMatrix", proj);
 
 		glfwPollEvents();
 
@@ -197,22 +230,19 @@ int main() {
 		glClearColor(bgCol.r, bgCol.g, bgCol.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		static bool useVBO = false;
-		if (useVBO) {
-			vbo1.bind();
-			vbo2.bind();
-			ebo.bind();
-			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-			ebo.unbind();
-			vbo1.unbind();
-			vbo2.unbind();
-		} else
-			cube.draw();
+		model = glm::translate(glm::mat4(1), { -1, 0, 0 });
+		program->setUniform("modelMatrix", model);
+		cube1.draw();
+
+		model = glm::translate(glm::mat4(1), { 1, 0, 0 });
+		program->setUniform("modelMatrix", model);
+		cube2.draw();
+
+		model = glm::mat4(1);
 
 		ImGui::Begin("Debug menu");
 		ImGui::ColorEdit3("clear color", glm::value_ptr(bgCol));
 		ImGui::Text("frame duration: %f", time - pTime);
-		ImGui::Checkbox("use VBO instead of VAO", &useVBO);
 		static float pitch = 0;
 		static float yaw = 0;
 		bool changedAngle = false;
@@ -233,8 +263,8 @@ int main() {
 			float y = 5.0f * sin(pitch);
 			float z = 5.0f * cos(pitch) * cos(yaw);
 
-			glm::mat4 view = glm::lookAt({ x, y, z }, glm::vec3(0), { 0.0f, 1.0f, 0.0f });
-			mvp = proj * view * model;
+			view = glm::lookAt({ x, y, z }, glm::vec3(0), { 0.0f, 1.0f, 0.0f });
+			program->setUniform("viewMatrix", view);
 		}
 		ImGui::End();
 

@@ -3,7 +3,9 @@
 layout (location = 0) in vec3 a_position;
 layout (location = 1) in vec4 a_color;
 
-uniform mat4 mvpMatrix;
+uniform mat4 modelMatrix = mat4(1.0);
+uniform mat4 viewMatrix = mat4(1.0);
+uniform mat4 projectionMatrix = mat4(1.0);
 uniform float time = 0;
 
 out vec4 color;
@@ -14,5 +16,5 @@ void main() {
 	// position.y += sin(a_position.x * a_position.z * time) / 3;
 
 	color = a_color;
-	gl_Position = mvpMatrix * vec4(position, 1);
+	gl_Position = projectionMatrix * viewMatrix * modelMatrix  * vec4(position, 1);
 }

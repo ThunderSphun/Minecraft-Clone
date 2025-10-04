@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <vector>
+#include <optional>
 
 namespace Minecraft::Assets {
 	class VBO {
@@ -18,6 +19,8 @@ namespace Minecraft::Assets {
 
 		void bind();
 		void unbind();
+
+		size_t getSize();
 
 		/// draws the vbo
 		/// only works with opengl in compat mode
@@ -45,6 +48,8 @@ namespace Minecraft::Assets {
 		void bind();
 		void unbind();
 
+		size_t getSize();
+
 	private:
 		EBO();
 
@@ -61,9 +66,10 @@ namespace Minecraft::Assets {
 		VAO& operator=(VAO&& other) noexcept;
 		~VAO();
 
-		static VAO create(std::function<size_t(GLuint)> vertices);
-		static VAO create(std::function<size_t(GLuint)> vertices, std::function<void(GLuint)> indices);
-		static VAO create(std::function<size_t(GLuint)> vertices, std::vector<GLuint> indices);
+		static VAO create(std::function<VBO()> vbo);
+		static VAO create(std::function<VBO()> vbo, std::function<EBO()> ebo);
+		static VAO create(std::vector<std::function<VBO()>> vbos);
+		static VAO create(std::vector<std::function<VBO()>> vbos, std::function<EBO()> ebo);
 
 		void bind();
 		void unbind();
@@ -71,13 +77,10 @@ namespace Minecraft::Assets {
 		void draw(GLenum shape = GL_TRIANGLES);
 
 	private:
-		VAO() = default;
+		VAO();
 
 		GLuint vao = 0;
-		GLuint* vbos = nullptr;
-		GLsizei vboCount = 0;
-		GLuint ebo = 0;
-
-		size_t vertexCount = 0;
+		std::vector<VBO> vbos;
+		std::optional<EBO> ebo;
 	};
 }
