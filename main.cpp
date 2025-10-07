@@ -151,7 +151,7 @@ int main() {
 				glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*) sizeof(vertices));
 				glEnableVertexAttribArray(1);
 
-				return 36;
+				return sizeof(vertices) / sizeof(vertices[0]);
 			});
 		},
 		[indices]() {
@@ -227,8 +227,8 @@ int main() {
 		model = glm::mat4(1);
 
 		ImGui::Begin("Debug menu");
-		ImGui::ColorEdit3("clear color", glm::value_ptr(bgCol));
 		ImGui::Text("frame duration: %f", time - pTime);
+		ImGui::ColorEdit3("clear color", glm::value_ptr(bgCol));
 		static float pitch = 0;
 		static float yaw = 0;
 		bool changedAngle = false;
@@ -251,6 +251,84 @@ int main() {
 
 			view = glm::lookAt({ x, y, z }, glm::vec3(0), { 0.0f, 1.0f, 0.0f });
 		}
+
+		ImGui::SeparatorText("OpenGL modes");
+		auto openGLToggle = [](GLenum flag, const char* name) {
+			bool isActive = glIsEnabled(flag);
+
+			if (ImGui::Checkbox(name, &isActive))
+				if (!isActive) // already toggled
+					glDisable(flag);
+				else
+					glEnable(flag);
+
+			return isActive;
+		};
+
+		openGLToggle(GL_DEPTH_TEST, "depth test");
+
+		if (openGLToggle(GL_CULL_FACE, "cull face")) {
+			const char* names[] = { "front", "back", };
+			GLenum values[] = { GL_FRONT, GL_BACK, };
+			static int value = 1;
+			bool update = false;
+
+			ImGui::Indent();
+			for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+				if (i > 0)
+					ImGui::SameLine();
+				update |= ImGui::RadioButton(names[i], &value, i);
+			}
+			ImGui::Unindent();
+
+			if (update)
+				glCullFace(values[value]);
+		}
+
+		{
+			const char* names[] = { "point", "line", "fill", };
+			GLenum values[] = { GL_POINT, GL_LINE, GL_FILL, };
+			static int value = 2;
+			bool update = false;
+
+			for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+				if (i > 0)
+					ImGui::SameLine();
+				update |= ImGui::RadioButton(names[i], &value, i);
+			}
+
+			if (update)
+				glPolygonMode(GL_FRONT_AND_BACK, values[value]);
+
+			ImGui::Indent();
+			switch (values[value]) {
+			case GL_POINT: {
+				float range[] = { 1, 1 };
+				float currentSize = 1;
+
+				glGetFloatv(GL_POINT_SIZE_RANGE, range);
+				glGetFloatv(GL_POINT_SIZE, &currentSize);
+
+				if (ImGui::SliderFloat("Point size", &currentSize, range[0], range[1], "%.3f", ImGuiSliderFlags_Logarithmic))
+					glPointSize(currentSize);
+			} break;
+			case GL_LINE: {
+				bool isSmooth = glIsEnabled(GL_LINE_SMOOTH);
+				float range[] = { 1, 1 };
+				float currentSize = 1;
+
+				glGetFloatv(isSmooth ? GL_SMOOTH_LINE_WIDTH_RANGE : GL_ALIASED_LINE_WIDTH_RANGE, range);
+				glGetFloatv(GL_LINE_WIDTH, &currentSize);
+
+				if (ImGui::SliderFloat("line width", &currentSize, range[0], range[1]))
+					glLineWidth(currentSize);
+
+				openGLToggle(GL_LINE_SMOOTH, "use smooth lines");
+			} break;
+			}
+			ImGui::Unindent();
+		}
+
 		ImGui::End();
 
 		ImGui::ShowDemoWindow();
