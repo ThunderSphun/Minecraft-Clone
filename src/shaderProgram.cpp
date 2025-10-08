@@ -177,12 +177,12 @@ namespace Minecraft::Assets {
 		return glGetUniformLocation(id, uniform.c_str());
 }
 
-	void ShaderProgram::setUniform(GLint uniform, bool value) { glUniform1i(uniform, value ? GL_TRUE : GL_FALSE); }
-	void ShaderProgram::setUniform(GLint uniform, int value) { glUniform1i(uniform, value); }
-	void ShaderProgram::setUniform(GLint uniform, float value) { glUniform1f(uniform, value); }
-	void ShaderProgram::setUniform(GLint uniform, const glm::mat4& value) { glUniformMatrix4fv(uniform, 1, GL_FALSE, glm::value_ptr(value)); }
-	void ShaderProgram::setUniform(GLint uniform, const glm::mat3& value) { glUniformMatrix3fv(uniform, 1, GL_FALSE, glm::value_ptr(value)); }
-	void ShaderProgram::setUniform(GLint uniform, const glm::vec4& value) { glUniform4fv(uniform, 1, glm::value_ptr(value)); }
-	void ShaderProgram::setUniform(GLint uniform, const glm::vec3& value) { glUniform3fv(uniform, 1, glm::value_ptr(value)); }
-	void ShaderProgram::setUniform(GLint uniform, const glm::vec2& value) { glUniform2fv(uniform, 1, glm::value_ptr(value)); }
+	void ShaderProgram::setUniform(GLint uniform, bool val) { glUniform1i(uniform, val ? GL_TRUE : GL_FALSE); }
+	void ShaderProgram::setUniform(GLint uniform, int val) { glUniform1i(uniform, val); }
+	void ShaderProgram::setUniform(GLint uniform, float val) { glUniform1f(uniform, val); }
+	void ShaderProgram::setUniform(GLint uniform, const glm::mat4& val) { glUniformMatrix4fv(uniform, 1, GL_FALSE, glm::value_ptr(val)); }
+	void ShaderProgram::setUniform(GLint uniform, const glm::mat3& val) { glUniformMatrix3fv(uniform, 1, GL_FALSE, glm::value_ptr(val)); }
+	void ShaderProgram::setUniform(GLint uniform, const glm::vec4& val) { glUniform4f(uniform, val.x, val.y, val.z, val.w); }
+	void ShaderProgram::setUniform(GLint uniform, const glm::vec3& val) { glUniform3f(uniform, val.x, val.y, val.z); }
+	void ShaderProgram::setUniform(GLint uniform, const glm::vec2& val) { glUniform2f(uniform, val.x, val.y); }
 }
