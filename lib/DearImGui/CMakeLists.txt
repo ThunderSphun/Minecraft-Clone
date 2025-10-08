@@ -12,6 +12,7 @@ add_library(Dear_ImGui STATIC
         imgui/backends/imgui_impl_opengl3.cpp
         imgui/backends/imgui_impl_glfw.cpp
 )
+
 # link DearImGui library
 target_include_directories(Dear_ImGui PUBLIC imgui)
 target_link_libraries(Dear_ImGui glfw)
