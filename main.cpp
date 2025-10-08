@@ -54,6 +54,13 @@ void init() {
 	glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int width, int height) {
 		glViewport(0, 0, width, height);
 	});
+	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mod) {
+		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+			if (!ImGui::IsAnyItemActive() &&
+				// needs to happen in a callback, otherwise the popup is already closed
+				!ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
+				glfwSetWindowShouldClose(window, true);
+	});
 
 	cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
 	std::atexit([](){glfwDestroyCursor(cursor);});
