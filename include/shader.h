@@ -68,23 +68,23 @@ namespace Minecraft::Assets {
 
 		[[nodiscard]] GLint getUniform(const std::string& uniform) const;
 
-		void setUniform(const std::string& uniform, bool value) { setUniform(getUniform(uniform), value); };
-		void setUniform(const std::string& uniform, int value) { setUniform(getUniform(uniform), value); };
-		void setUniform(const std::string& uniform, float value) { setUniform(getUniform(uniform), value); };
-		void setUniform(const std::string& uniform, const glm::mat4& value) { setUniform(getUniform(uniform), value); };
-		void setUniform(const std::string& uniform, const glm::mat3& value) { setUniform(getUniform(uniform), value); };
-		void setUniform(const std::string& uniform, const glm::vec4& value) { setUniform(getUniform(uniform), value); };
-		void setUniform(const std::string& uniform, const glm::vec3& value) { setUniform(getUniform(uniform), value); };
-		void setUniform(const std::string& uniform, const glm::vec2& value) { setUniform(getUniform(uniform), value); };
+		void setUniform(const std::string& uniform, bool val) { setUniform(getUniform(uniform), val); };
+		void setUniform(const std::string& uniform, int val) { setUniform(getUniform(uniform), val); };
+		void setUniform(const std::string& uniform, float val) { setUniform(getUniform(uniform), val); };
+		void setUniform(const std::string& uniform, const glm::mat4& val) { setUniform(getUniform(uniform), val); };
+		void setUniform(const std::string& uniform, const glm::mat3& val) { setUniform(getUniform(uniform), val); };
+		void setUniform(const std::string& uniform, const glm::vec4& val) { setUniform(getUniform(uniform), val); };
+		void setUniform(const std::string& uniform, const glm::vec3& val) { setUniform(getUniform(uniform), val); };
+		void setUniform(const std::string& uniform, const glm::vec2& val) { setUniform(getUniform(uniform), val); };
 
-		void setUniform(GLint uniform, bool value);
-		void setUniform(GLint uniform, int value);
-		void setUniform(GLint uniform, float value);
-		void setUniform(GLint uniform, const glm::mat4& value);
-		void setUniform(GLint uniform, const glm::mat3& value);
-		void setUniform(GLint uniform, const glm::vec4& value);
-		void setUniform(GLint uniform, const glm::vec3& value);
-		void setUniform(GLint uniform, const glm::vec2& value);
+		void setUniform(GLint uniform, bool val);
+		void setUniform(GLint uniform, int val);
+		void setUniform(GLint uniform, float val);
+		void setUniform(GLint uniform, const glm::mat4& val);
+		void setUniform(GLint uniform, const glm::mat3& val);
+		void setUniform(GLint uniform, const glm::vec4& val);
+		void setUniform(GLint uniform, const glm::vec3& val);
+		void setUniform(GLint uniform, const glm::vec2& val);
 
 		friend class Shader;
 
