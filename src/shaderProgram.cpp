@@ -6,39 +6,39 @@
 #include <algorithm>
 
 namespace Minecraft::Assets {
-	ShaderProgram::ShaderProgram() : id(glCreateProgram()) {
-		if (id == 0)
+	ShaderProgram::ShaderProgram() : program(glCreateProgram()) {
+		if (program == 0)
 			std::cerr << "unknown error from glCreateProgram" << std::endl;
 	}
 
 	ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept {
-		if (id != 0)
-			glDeleteProgram(id);
+		if (program != 0)
+			glDeleteProgram(program);
 
-		this->id = other.id;
+		this->program = other.program;
 		this->shaders = other.shaders;
 
-		other.id = 0;
+		other.program = 0;
 		other.shaders = {};
 	}
 
 	ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
 		if (this != &other) {
-			if (id != 0)
-				glDeleteProgram(id);
+			if (program != 0)
+				glDeleteProgram(program);
 
-			this->id = other.id;
+			this->program = other.program;
 			this->shaders = other.shaders;
 
-			other.id = 0;
+			other.program = 0;
 			other.shaders = {};
 		}
 		return *this;
 	}
 
 	ShaderProgram::~ShaderProgram() {
-		if (id != 0)
-			glDeleteProgram(id);
+		if (program != 0)
+			glDeleteProgram(program);
 	}
 
 	std::shared_ptr<ShaderProgram> ShaderProgram::create() {
@@ -48,25 +48,25 @@ namespace Minecraft::Assets {
 	std::shared_ptr<ShaderProgram> ShaderProgram::attachShader(std::weak_ptr<Shader> _shader) {
 		if (auto shader = _shader.lock()) {
 			GLint shaderCount = 0;
-			glGetProgramiv(id, GL_ATTACHED_SHADERS, &shaderCount);
+			glGetProgramiv(program, GL_ATTACHED_SHADERS, &shaderCount);
 			std::vector<GLuint> attachedShaders(shaderCount);
-			glGetAttachedShaders(id, shaderCount, &shaderCount, attachedShaders.data());
-			if (std::none_of(attachedShaders.begin(), attachedShaders.end(), [shader](GLuint i) { return i == shader->id; })) {
-				glAttachShader(id, shader->id);
+			glGetAttachedShaders(program, shaderCount, &shaderCount, attachedShaders.data());
+			if (std::none_of(attachedShaders.begin(), attachedShaders.end(), [shader](GLuint i) { return i == shader->shader; })) {
+				glAttachShader(program, shader->shader);
 				{
 					GLenum error = glGetError();
 					if (error == GL_INVALID_VALUE) {
-						if (!glIsProgram(id))
-							std::cerr << "provided program '" << id << "' isn't known to opengl" << std::endl;
-						if (!glIsShader(shader->id))
-							std::cerr << "provided shader '" << shader->id << "' isn't known to opengl" << std::endl;
+						if (!glIsProgram(program))
+							std::cerr << "provided program '" << program << "' isn't known to opengl" << std::endl;
+						if (!glIsShader(shader->shader))
+							std::cerr << "provided shader '" << shader->shader << "' isn't known to opengl" << std::endl;
 
 						return shared_from_this();
 					} else if (error == GL_INVALID_OPERATION) {
-						if (!glIsProgram(id))
-							std::cerr << "provided program '" << id << "' isn't a program" << std::endl;
-						if (!glIsShader(shader->id))
-							std::cerr << "provided shader '" << shader->id << "' isn't a shader" << std::endl;
+						if (!glIsProgram(program))
+							std::cerr << "provided program '" << program << "' isn't a program" << std::endl;
+						if (!glIsShader(shader->shader))
+							std::cerr << "provided shader '" << shader->shader << "' isn't a shader" << std::endl;
 						// error code is technicly possible when the shader is already attached to the program,
 						// but we explicitly check for it not being the case
 
@@ -84,25 +84,25 @@ namespace Minecraft::Assets {
 	std::shared_ptr<ShaderProgram> ShaderProgram::detachShader(std::weak_ptr<Shader> _shader) {
 		if (auto shader = _shader.lock()) {
 			GLint shaderCount = 0;
-			glGetProgramiv(id, GL_ATTACHED_SHADERS, &shaderCount);
+			glGetProgramiv(program, GL_ATTACHED_SHADERS, &shaderCount);
 			std::vector<GLuint> attachedShaders(shaderCount);
-			glGetAttachedShaders(id, shaderCount, &shaderCount, attachedShaders.data());
-			if (std::any_of(attachedShaders.begin(), attachedShaders.end(), [shader](GLuint i) { return i == shader->id; })) {
-				glDetachShader(id, shader->id);
+			glGetAttachedShaders(program, shaderCount, &shaderCount, attachedShaders.data());
+			if (std::any_of(attachedShaders.begin(), attachedShaders.end(), [shader](GLuint i) { return i == shader->shader; })) {
+				glDetachShader(program, shader->shader);
 				{
 					GLenum error = glGetError();
 					if (error == GL_INVALID_VALUE) {
-						if (!glIsProgram(id))
-							std::cerr << "provided program '" << id << "' isn't known to opengl" << std::endl;
-						if (!glIsShader(shader->id))
-							std::cerr << "provided shader '" << shader->id << "' isn't known to opengl" << std::endl;
+						if (!glIsProgram(program))
+							std::cerr << "provided program '" << program << "' isn't known to opengl" << std::endl;
+						if (!glIsShader(shader->shader))
+							std::cerr << "provided shader '" << shader->shader << "' isn't known to opengl" << std::endl;
 
 						return shared_from_this();
 					} else if (error == GL_INVALID_OPERATION) {
-						if (!glIsProgram(id))
-							std::cerr << "provided program '" << id << "' isn't a program" << std::endl;
-						if (!glIsShader(shader->id))
-							std::cerr << "provided shader '" << shader->id << "' isn't a shader" << std::endl;
+						if (!glIsProgram(program))
+							std::cerr << "provided program '" << program << "' isn't a program" << std::endl;
+						if (!glIsShader(shader->shader))
+							std::cerr << "provided shader '" << shader->shader << "' isn't a shader" << std::endl;
 						// error code is technicly possible when the shader is not attached to the program,
 						// but we explicitly check for it not being the case
 
@@ -112,9 +112,9 @@ namespace Minecraft::Assets {
 
 				std::erase_if(shader->programs, [this](const std::weak_ptr<ShaderProgram>& _program) {
 					if (auto program = _program.lock())
-						return program->id == id;
+						return program->program == this->program;
 					return false;
-					});
+				});
 				std::erase(shaders, shader);
 			}
 		}
@@ -127,28 +127,33 @@ namespace Minecraft::Assets {
 			std::cerr << "attribute '" << name << "' starts with reserved prefix 'gl_'" << std::endl;
 			return shared_from_this();
 		}
-		if (index >= GL_MAX_VERTEX_ATTRIBS) {
-			std::cerr << "index '" << index << "' is out of range [0, " << GL_MAX_VERTEX_ATTRIBS << ")" << std::endl;
-			return shared_from_this();
+		{
+			int maxVertexCount = 0;
+			glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &maxVertexCount);
+			if (index >= maxVertexCount) {
+				std::cerr << "index '" << index << "' is out of range [0, " << maxVertexCount << ")" << std::endl;
+				return shared_from_this();
+			}
 		}
 
-		glBindAttribLocation(id, index, name.c_str());
+		// errors should all be handled already
+		glBindAttribLocation(program, index, name.c_str());
 
 		return shared_from_this();
 	}
 
 	std::shared_ptr<ShaderProgram> ShaderProgram::link() {
-		glLinkProgram(id);
+		glLinkProgram(program);
 		{
 			GLint isLinked = 0;
-			glGetProgramiv(id, GL_LINK_STATUS, &isLinked);
+			glGetProgramiv(program, GL_LINK_STATUS, &isLinked);
 
 			if (isLinked == GL_FALSE) {
 				int length = 0;
-				glGetProgramiv(id, GL_INFO_LOG_LENGTH, &length);
+				glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
 				std::string errorMessage(length, '\0');
 				int writtenCount = 0;
-				glGetProgramInfoLog(id, length, &writtenCount, errorMessage.data());
+				glGetProgramInfoLog(program, length, &writtenCount, errorMessage.data());
 				std::cerr << "shader program linked with error:\n" << errorMessage << std::endl;
 			}
 		}
@@ -158,24 +163,28 @@ namespace Minecraft::Assets {
 
 	std::shared_ptr<ShaderProgram> ShaderProgram::use() {
 		GLint isLinked = 0;
-		glGetProgramiv(id, GL_LINK_STATUS, &isLinked);
+		glGetProgramiv(program, GL_LINK_STATUS, &isLinked);
 
 		if (isLinked == GL_TRUE)
-			glUseProgram(id);
+			glUseProgram(program);
 		else
 			std::cerr << "Attempted to use unlinked program" << std::endl;
 
 		return shared_from_this();
 	}
 
-	void ShaderProgram::update() {
+	bool ShaderProgram::update() {
+		bool hasUpdated = false;
+
 		for (auto& shader : shaders)
-			shader->update();
+			hasUpdated |= shader->update();
+
+		return hasUpdated;
 	}
 
-	GLint ShaderProgram::getUniform(const std::string& uniform) {
-		return glGetUniformLocation(id, uniform.c_str());
-}
+	GLint ShaderProgram::getUniform(const std::string& uniform) const {
+		return glGetUniformLocation(program, uniform.c_str());
+	}
 
 	void ShaderProgram::setUniform(GLint uniform, bool value) { glUniform1i(uniform, value ? GL_TRUE : GL_FALSE); }
 	void ShaderProgram::setUniform(GLint uniform, int value) { glUniform1i(uniform, value); }

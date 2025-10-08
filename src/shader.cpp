@@ -5,8 +5,8 @@
 #include <algorithm>
 
 namespace Minecraft::Assets {
-	Shader::Shader(GLenum shaderType) : id(glCreateShader(shaderType)) {
-		if (id == 0) {
+	Shader::Shader(GLenum shaderType) : shader(glCreateShader(shaderType)) {
+		if (shader == 0) {
 			GLenum error = glGetError();
 			if (error == GL_INVALID_ENUM)
 				std::cerr << "shaderType is not valid, must be one of " <<
@@ -18,15 +18,15 @@ namespace Minecraft::Assets {
 	}
 
 	Shader::Shader(Shader&& other) noexcept {
-		if (id != 0)
-			glDeleteShader(id);
+		if (shader != 0)
+			glDeleteShader(shader);
 
-		this->id = other.id;
+		this->shader = other.shader;
 		this->lastTimeStamp = other.lastTimeStamp;
 		this->path = other.path;
 		this->programs = other.programs;
 
-		other.id = 0;
+		other.shader = 0;
 		other.lastTimeStamp = std::filesystem::file_time_type::min();
 		other.path = {};
 		other.programs = {};
@@ -34,15 +34,15 @@ namespace Minecraft::Assets {
 
 	Shader& Shader::operator=(Shader&& other) noexcept {
 		if (this != &other) {
-			if (id != 0)
-				glDeleteShader(id);
+			if (shader != 0)
+				glDeleteShader(shader);
 
-			this->id = other.id;
+			this->shader = other.shader;
 			this->lastTimeStamp = other.lastTimeStamp;
 			this->path = other.path;
 			this->programs = other.programs;
 
-			other.id = 0;
+			other.shader = 0;
 			other.lastTimeStamp = std::filesystem::file_time_type::min();
 			other.path = {};
 			other.programs = {};
@@ -51,27 +51,31 @@ namespace Minecraft::Assets {
 	}
 
 	Shader::~Shader() {
-		if (id != 0)
-			glDeleteShader(id);
+		if (shader != 0)
+			glDeleteShader(shader);
 	}
 
-	void Shader::update() {
+	bool Shader::update() {
+		bool isChanged = false;
 		if (path) {
+			// reload shader if file has changed
 			std::filesystem::file_time_type lastWriteTime = std::filesystem::last_write_time(*path);
 			if (lastWriteTime > lastTimeStamp) {
 				std::shared_ptr<Shader> other = parse(*path);
 				if (!other) {
 					std::cerr << "Failed to recompile changed shader, keeping old one" << std::endl;
-					lastTimeStamp = lastWriteTime;
+					lastTimeStamp = lastWriteTime; // make sure next frame we don't try to parse the file again
 				} else {
+					isChanged = true;
+
 					std::swap(*this, *other);
 					std::swap(this->programs, other->programs);
 
 					for (const std::weak_ptr<Program>& _program : programs) {
 						if (auto program = _program.lock()) {
-							if (std::any_of(program->shaders.begin(), program->shaders.end(), [this](const std::shared_ptr<Shader>& shader) { return shader->id == id; })) {
-								glDetachShader(program->id, other->id);
-								glAttachShader(program->id, this->id);
+							if (std::any_of(program->shaders.begin(), program->shaders.end(), [this](const std::shared_ptr<Shader>& shader) { return shader->shader == this->shader; })) {
+								glDetachShader(program->program, other->shader);
+								glAttachShader(program->program, this->shader);
 
 								program->link();
 							}
@@ -81,6 +85,7 @@ namespace Minecraft::Assets {
 			}
 		}
 
+		// remove programs that have been deleted
 		std::erase_if(programs, [this](std::weak_ptr<Shader::Program> _program) {
 			auto program = _program.lock();
 			if (!program)
@@ -88,22 +93,24 @@ namespace Minecraft::Assets {
 
 			{
 				GLint param = 0;
-				glGetProgramiv(program->id, GL_DELETE_STATUS, &param);
+				glGetProgramiv(program->program, GL_DELETE_STATUS, &param);
 				if (param == GL_TRUE)
 					return true;
 			}
 
 			return false;
 		});
+
+		return isChanged;
 	}
 
 	bool Shader::loadShaderSource(const std::string& source) {
 		const char* sourceData = source.c_str();
 
-		glShaderSource(id, 1, &sourceData, nullptr);
+		glShaderSource(shader, 1, &sourceData, nullptr);
 		{
 			GLint shaderSourceLength = 0;
-			glGetShaderiv(id, GL_SHADER_SOURCE_LENGTH, &shaderSourceLength);
+			glGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, &shaderSourceLength);
 			if (shaderSourceLength == 0) {
 				std::cerr << "could not upload shader source to OpenGL" << std::endl;
 
@@ -111,16 +118,16 @@ namespace Minecraft::Assets {
 			}
 		}
 
-		glCompileShader(id);
+		glCompileShader(shader);
 		{
 			GLint error = 0;
-			glGetShaderiv(id, GL_COMPILE_STATUS, &error);
+			glGetShaderiv(shader, GL_COMPILE_STATUS, &error);
 			if (error == GL_FALSE) {
 				int length = 0;
-				glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
+				glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 				std::string errorMessage(length, '\0');
 				int writtenCount = 0;
-				glGetShaderInfoLog(id, length, &writtenCount, errorMessage.data());
+				glGetShaderInfoLog(shader, length, &writtenCount, errorMessage.data());
 				std::cerr << "shader compiled with error:\n" << errorMessage << std::endl;
 
 				return false;
@@ -132,16 +139,19 @@ namespace Minecraft::Assets {
 
 	bool Shader::loadShaderSource(const std::vector<std::string>& sources) {
 		size_t sourcesSize = sources.size();
+		if (sourcesSize == 0)
+			return false;
 		if (sourcesSize == 1)
-			return loadShaderSource(sources[0]);
-		const char** sourceData = new const char*[sourcesSize];
-		for (size_t i = 0; i < sourcesSize; i++)
-			sourceData[i] = sources[i].c_str();
-		glShaderSource(id, sourcesSize, sourceData, nullptr);
-		delete[] sourceData;
+			return loadShaderSource(sources.front());
+		{
+			std::unique_ptr<const char*[]> sourceData = std::make_unique<const char*[]>(sourcesSize);
+			for (size_t i = 0; i < sourcesSize; i++)
+				sourceData.get()[i] = sources[i].c_str();
+			glShaderSource(shader, sourcesSize, sourceData.get(), nullptr);
+		}
 		{
 			GLint shaderSourceLength = 0;
-			glGetShaderiv(id, GL_SHADER_SOURCE_LENGTH, &shaderSourceLength);
+			glGetShaderiv(shader, GL_SHADER_SOURCE_LENGTH, &shaderSourceLength);
 			if (shaderSourceLength == 0) {
 				std::cerr << "could not upload shader source to OpenGL" << std::endl;
 
@@ -149,16 +159,16 @@ namespace Minecraft::Assets {
 			}
 		}
 
-		glCompileShader(id);
+		glCompileShader(shader);
 		{
 			GLint error = 0;
-			glGetShaderiv(id, GL_COMPILE_STATUS, &error);
+			glGetShaderiv(shader, GL_COMPILE_STATUS, &error);
 			if (error == GL_FALSE) {
 				int length = 0;
-				glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
+				glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 				std::string errorMessage(length, '\0');
 				int writtenCount = 0;
-				glGetShaderInfoLog(id, length, &writtenCount, errorMessage.data());
+				glGetShaderInfoLog(shader, length, &writtenCount, errorMessage.data());
 				std::cerr << "shader compiled with error:\n" << errorMessage << std::endl;
 
 				return false;

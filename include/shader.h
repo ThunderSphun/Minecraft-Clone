@@ -13,6 +13,7 @@ namespace Minecraft::Assets {
 	class Shader;
 	class ShaderProgram;
 
+	// TODO think about making 'GLuint id' a shared_ptr instead, to get rid of needing shader to be a shared_ptr
 	class Shader {
 	public:
 		Shader(GLenum shaderType);
@@ -24,21 +25,21 @@ namespace Minecraft::Assets {
 		Shader& operator=(Shader&& other) noexcept;
 		~Shader();
 
-		void update();
+		bool update();
 
 		bool loadShaderSource(const std::string& source);
 		bool loadShaderSource(const std::vector<std::string>& sources);
 
-		static std::shared_ptr<Shader> parse(std::filesystem::path path);
-		static std::shared_ptr<Shader> parse(std::filesystem::path path, GLenum shaderType);
-		static std::shared_ptr<Shader> parse(const std::string& source, GLenum shaderType);
+		static [[nodiscard]] std::shared_ptr<Shader> parse(std::filesystem::path path);
+		static [[nodiscard]] std::shared_ptr<Shader> parse(std::filesystem::path path, GLenum shaderType);
+		static [[nodiscard]] std::shared_ptr<Shader> parse(const std::string& source, GLenum shaderType);
 
 		using Program = ShaderProgram;
 
 		friend class ShaderProgram;
 
 	private:
-		GLuint id = 0;
+		GLuint shader = 0;
 
 		std::optional<std::filesystem::path> path = {};
 		std::filesystem::file_time_type lastTimeStamp = std::filesystem::file_time_type::min();
@@ -46,6 +47,7 @@ namespace Minecraft::Assets {
 		std::vector<std::weak_ptr<ShaderProgram>> programs = {};
 	};
 
+	// TODO think about making 'GLuint id' a shared_ptr instead, to get rid of needing shader to be a shared_ptr
 	class ShaderProgram : public std::enable_shared_from_this<ShaderProgram> {
 	public:
 		ShaderProgram(const ShaderProgram&) = delete;
@@ -54,7 +56,7 @@ namespace Minecraft::Assets {
 		ShaderProgram& operator=(ShaderProgram&& other) noexcept;
 		~ShaderProgram();
 
-		static std::shared_ptr<ShaderProgram> create();
+		static [[nodiscard]] std::shared_ptr<ShaderProgram> create();
 
 		std::shared_ptr<ShaderProgram> attachShader(std::weak_ptr<Shader> shader);
 		std::shared_ptr<ShaderProgram> detachShader(std::weak_ptr<Shader> shader);
@@ -62,9 +64,9 @@ namespace Minecraft::Assets {
 		std::shared_ptr<ShaderProgram> link();
 		std::shared_ptr<ShaderProgram> use();
 
-		void update();
+		bool update();
 
-		[[nodiscard]] GLint getUniform(const std::string& uniform);
+		[[nodiscard]] GLint getUniform(const std::string& uniform) const;
 
 		void setUniform(const std::string& uniform, bool value) { setUniform(getUniform(uniform), value); };
 		void setUniform(const std::string& uniform, int value) { setUniform(getUniform(uniform), value); };
@@ -89,7 +91,7 @@ namespace Minecraft::Assets {
 	private:
 		ShaderProgram();
 
-		GLuint id = 0;
+		GLuint program = 0;
 
 		std::vector<std::shared_ptr<Shader>> shaders = {};
 	};

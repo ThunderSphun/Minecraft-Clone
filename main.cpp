@@ -117,6 +117,10 @@ int main() {
 	glm::mat4 view = glm::lookAt(glm::vec3(0, 1.666, -5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	glm::mat4 proj = glm::perspective(45.0f, 1080 / 720.0f, 0.1f, 100.0f);
 
+	program->setUniform("modelMatrix", model);
+	program->setUniform("viewMatrix", view);
+	program->setUniform("projectionMatrix", proj);
+
 	glm::vec3 vertices[] = {
 		{-0.5f, -0.5f, -0.5f},
 		{-0.5f, +0.5f, -0.5f},
@@ -204,10 +208,11 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 
 	while (!glfwWindowShouldClose(window)) {
-		program->update();
-		program->setUniform("modelMatrix", model);
-		program->setUniform("viewMatrix", view);
-		program->setUniform("projectionMatrix", proj);
+		if (program->update()) {
+			program->setUniform("modelMatrix", model);
+			program->setUniform("viewMatrix", view);
+			program->setUniform("projectionMatrix", proj);
+		}
 
 		glfwPollEvents();
 
@@ -257,6 +262,8 @@ int main() {
 			float z = 5.0f * cos(pitch) * cos(yaw);
 
 			view = glm::lookAt({ x, y, z }, glm::vec3(0), { 0.0f, 1.0f, 0.0f });
+
+			program->setUniform("viewMatrix", view);
 		}
 
 		ImGui::SeparatorText("OpenGL modes");

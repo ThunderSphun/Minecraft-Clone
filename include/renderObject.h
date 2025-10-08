@@ -7,6 +7,7 @@
 #include <optional>
 
 namespace Minecraft::Assets {
+	// TODO think about making 'GLuint vbo' a shared_ptr instead, to get rid of needing shader to be a shared_ptr
 	class VBO {
 	public:
 		VBO(const VBO&) = delete;
@@ -20,7 +21,7 @@ namespace Minecraft::Assets {
 		void bind();
 		void unbind();
 
-		size_t getSize();
+		size_t getSize() const;
 
 		/// draws the vbo
 		/// only works with opengl in compat mode
@@ -34,6 +35,7 @@ namespace Minecraft::Assets {
 		size_t vertexCount = 0;
 	};
 
+	// TODO think about making 'GLuint ebo' a shared_ptr instead, to get rid of needing shader to be a shared_ptr
 	class EBO {
 	public:
 		EBO(const EBO&) = delete;
@@ -48,7 +50,7 @@ namespace Minecraft::Assets {
 		void bind();
 		void unbind();
 
-		size_t getSize();
+		size_t getSize() const;
 
 	private:
 		EBO();
@@ -58,6 +60,7 @@ namespace Minecraft::Assets {
 		size_t indicesCount = 0;
 	};
 
+	// TODO think about making 'GLuint vao' a shared_ptr instead, to get rid of needing shader to be a shared_ptr
 	class VAO {
 	public:
 		VAO(const VAO&) = delete;

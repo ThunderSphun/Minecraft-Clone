@@ -63,7 +63,7 @@ namespace Minecraft::Assets {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 
-	size_t EBO::getSize() {
+	size_t EBO::getSize() const {
 		return indicesCount;
 	}
 }

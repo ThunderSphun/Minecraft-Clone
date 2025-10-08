@@ -55,7 +55,7 @@ namespace Minecraft::Assets {
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
-	size_t VBO::getSize() {
+	size_t VBO::getSize() const {
 		return vertexCount;
 	}
 
