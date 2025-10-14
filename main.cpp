@@ -2,6 +2,7 @@
 
 #include "shader.h"
 #include "renderObject.h"
+#include "texture.h"
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -13,6 +14,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 #include <cstdlib>
 #include <iostream>
@@ -22,6 +24,8 @@ GLFWwindow* window = nullptr;
 GLFWcursor* cursor = nullptr;
 
 void init() {
+	//std::atexit([]() { std::cin.get(); });
+
 	glfwSetErrorCallback([](int error, const char* description) {
 		std::cerr << std::format("GLFW Error {}: {}", error, description) << std::endl;
 	});
@@ -109,12 +113,14 @@ int main() {
 		->link()
 		->use();
 
+	std::shared_ptr<Minecraft::Assets::Texture2D> img = Minecraft::Assets::Texture2D::load(std::filesystem::path("test.png"));
+
 	ImGuiIO& io = ImGui::GetIO();
 
 	glm::vec3 bgCol(0.9, 0.9, 1.0f);
 
-	glm::mat4 model = glm::mat4x4(1);
-	glm::mat4 view = glm::lookAt(glm::vec3(0, 1.666, -5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	glm::mat4 model = glm::mat4(1);
+	glm::mat4 view = glm::mat4(1);
 	glm::mat4 proj = glm::perspective(45.0f, 1080 / 720.0f, 0.1f, 100.0f);
 
 	program->setUniform("modelMatrix", model);
@@ -122,45 +128,132 @@ int main() {
 	program->setUniform("projectionMatrix", proj);
 
 	glm::vec3 vertices[] = {
+		// back
 		{-0.5f, -0.5f, -0.5f},
 		{-0.5f, +0.5f, -0.5f},
 		{+0.5f, -0.5f, -0.5f},
 		{+0.5f, +0.5f, -0.5f},
+		// front
 		{-0.5f, -0.5f, +0.5f},
 		{-0.5f, +0.5f, +0.5f},
 		{+0.5f, -0.5f, +0.5f},
 		{+0.5f, +0.5f, +0.5f},
+
+		// top
+		{-0.5f, +0.5f, -0.5f},
+		{-0.5f, +0.5f, +0.5f},
+		{+0.5f, +0.5f, -0.5f},
+		{+0.5f, +0.5f, +0.5f},
+		// bottom
+		{-0.5f, -0.5f, -0.5f},
+		{-0.5f, -0.5f, +0.5f},
+		{+0.5f, -0.5f, -0.5f},
+		{+0.5f, -0.5f, +0.5f},
+
+		// right
+		{+0.5f, -0.5f, -0.5f},
+		{+0.5f, -0.5f, +0.5f},
+		{+0.5f, +0.5f, -0.5f},
+		{+0.5f, +0.5f, +0.5f},
+		// left
+		{-0.5f, -0.5f, -0.5f},
+		{-0.5f, -0.5f, +0.5f},
+		{-0.5f, +0.5f, -0.5f},
+		{-0.5f, +0.5f, +0.5f},
 	};
 	glm::vec4 colors[] = {
+		// back
 		{1, 0, 0, 1},
 		{0, 1, 0, 1},
 		{0, 0, 1, 1},
 		{0, 0, 0, 1},
+		// front
 		{0, 1, 1, 1},
 		{1, 0, 1, 1},
 		{1, 1, 0, 1},
 		{1, 1, 1, 1},
+
+		// top
+		{0, 1, 0, 1},
+		{1, 0, 1, 1},
+		{0, 0, 0, 1},
+		{1, 1, 1, 1},
+		// bottom
+		{1, 0, 0, 1},
+		{0, 1, 1, 1},
+		{0, 0, 1, 1},
+		{1, 1, 0, 1},
+		
+		// right
+		{0, 0, 1, 1},
+		{1, 1, 0, 1},
+		{0, 0, 0, 1},
+		{1, 1, 1, 1},
+		// left
+		{1, 0, 0, 1},
+		{0, 1, 1, 1},
+		{0, 1, 0, 1},
+		{1, 0, 1, 1},
+	};
+	glm::vec2 texcoords[] = {
+		// back
+		{0, 0},
+		{0, 1},
+		{1, 0},
+		{1, 1},
+		// front
+		{1, 0},
+		{1, 1},
+		{0, 0},
+		{0, 1},
+
+		// top
+		{1, 1},
+		{1, 0},
+		{0, 1},
+		{0, 0},
+		// bottom
+		{1, 1},
+		{1, 0},
+		{0, 1},
+		{0, 0},
+
+		// right
+		{0, 0},
+		{1, 0},
+		{0, 1},
+		{1, 1},
+		// left
+		{1, 0},
+		{0, 0},
+		{1, 1},
+		{0, 1},
 	};
 	uint32_t indices[] = {
-		0, 1, 2,  1, 2, 3, // back
-		4, 5, 6,  5, 6, 7, // front
-		0, 1, 4,  1, 4, 5, // left
-		2, 3, 6,  3, 6, 7, // right
-		0, 2, 4,  2, 4, 6, // bottom
-		1, 3, 5,  3, 5, 7, // top
+		 0,  2,  1,   2,  3,  1, // Back
+		 4,  5,  6,   6,  5,  7, // Front
+
+		 8, 10,  9,  10, 11,  9, // Top
+		12, 13, 14,  14, 13, 15, // Bottom
+
+		16, 17, 18,  17, 19, 18, // Right
+		20, 22, 21,  21, 22, 23, // Left
 	};
 
 	Minecraft::Assets::VAO cube1 = Minecraft::Assets::VAO::create(
-		[vertices, colors]() {
-			return Minecraft::Assets::VBO::create([vertices, colors](GLuint vbo) {
-				glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors), nullptr, GL_STATIC_DRAW);
+		[vertices, colors, texcoords]() {
+			return Minecraft::Assets::VBO::create([vertices, colors, texcoords](GLuint vbo) {
+				glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors) + sizeof(texcoords), nullptr, GL_STATIC_DRAW);
 				glNamedBufferSubData(vbo, 0, sizeof(vertices), vertices);
 				glNamedBufferSubData(vbo, sizeof(vertices), sizeof(colors), colors);
+				glNamedBufferSubData(vbo, sizeof(vertices) + sizeof(colors), sizeof(texcoords), texcoords);
 
 				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
 				glEnableVertexAttribArray(0);
 				glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*) sizeof(vertices));
 				glEnableVertexAttribArray(1);
+				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*) (sizeof(vertices) + sizeof(colors)));
+				glEnableVertexAttribArray(2);
 
 				return sizeof(vertices) / sizeof(vertices[0]);
 			});
@@ -195,6 +288,15 @@ int main() {
 					return sizeof(colors) / sizeof(colors[0]);
 				});
 			},
+			[texcoords]() {
+				return Minecraft::Assets::VBO::create([texcoords](GLuint vbo) {
+					glBufferData(GL_ARRAY_BUFFER, sizeof(texcoords), texcoords, GL_STATIC_DRAW);
+					glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), 0);
+					glEnableVertexAttribArray(2);
+
+					return sizeof(texcoords) / sizeof(texcoords[0]);
+				});
+			},
 		},
 		[indices]() {
 			return Minecraft::Assets::EBO::create([indices](GLuint ebo) {
@@ -206,6 +308,15 @@ int main() {
 	);
 
 	glEnable(GL_DEPTH_TEST);
+
+	glDisable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	while (!glfwWindowShouldClose(window)) {
 		if (program->update()) {
@@ -228,75 +339,187 @@ int main() {
 		glClearColor(bgCol.r, bgCol.g, bgCol.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		model = glm::scale(glm::translate(glm::mat4(1), { -1, 0, 0 }), { +1, 1, 1 });
-		program->setUniform("modelMatrix", model);
-		cube1.draw();
-
-		model = glm::scale(glm::translate(glm::mat4(1), { +1, 0, 0 }), { -1, 1, 1 });
-		program->setUniform("modelMatrix", model);
-		cube2.draw();
-
-		model = glm::mat4(1);
-
 		ImGui::Begin("Debug menu");
 		ImGui::Text("frame duration: %f", time - pTime);
 		ImGui::ColorEdit3("clear color", glm::value_ptr(bgCol));
+		ImGui::Separator();
+		{
+			static bool renderCube1 = true;
+			static bool renderCube2 = true;
+
+			ImGui::Checkbox("Render cube 1", &renderCube1);
+			ImGui::Checkbox("Render cube 2", &renderCube2);
+
+			if (renderCube1) {
+				model = glm::mat4(1);
+				if (renderCube2)
+					model = glm::translate(model, { -0.5, 0, 0 });
+				model = glm::scale(model, { 1, 1, 1 });
+
+				program->setUniform("modelMatrix", model);
+
+				cube1.draw();
+			}
+
+			if (renderCube2) {
+				model = glm::mat4(1);
+				if (renderCube1)
+					model = glm::translate(model, { 0.5, 0, 0 });
+				model = glm::scale(model, { -1, 1, 1 });
+
+				program->setUniform("modelMatrix", model);
+				cube2.draw();
+			}
+		}
 		static float pitch = 0;
 		static float yaw = 0;
-		bool changedAngle = false;
-		changedAngle |= ImGui::SliderAngle("pitch", &pitch, -90, 90);
+		static float roll = 0;
+		static bool changedAngle = true;
+		ImGui::BeginGroup();
+		changedAngle |= ImGui::SliderAngle("pitch", &pitch, -89, 89);
+		changedAngle |= ImGui::SliderAngle("Yaw", &yaw);
+		changedAngle |= ImGui::SliderAngle("Roll", &roll);
+		ImGui::EndGroup();
 		ImGui::SameLine();
-		if (ImGui::Button("reset##pitch")) {
+		ImGui::BeginGroup();
+		ImGui::BeginDisabled(glm::abs(pitch) < 0.01);
+		if (ImGui::Button("reset##pitch", { -FLT_MIN, 0 })) {
 			pitch = 0;
 			changedAngle = true;
 		}
-		changedAngle |= ImGui::SliderAngle("Yaw", &yaw);
-		ImGui::SameLine();
-		if (ImGui::Button("reset##yaw")) {
+		ImGui::EndDisabled();
+		ImGui::BeginDisabled(glm::abs(yaw) < 0.01);
+		if (ImGui::Button("reset##yaw", { -FLT_MIN, 0 })) {
 			yaw = 0;
 			changedAngle = true;
 		}
+		ImGui::EndDisabled();
+		ImGui::BeginDisabled(glm::abs(roll) < 0.01);
+		if (ImGui::Button("reset##roll", { -FLT_MIN, 0 })) {
+			roll = 0;
+			changedAngle = true;
+		}
+		ImGui::EndDisabled();
+		ImGui::EndGroup();
+		ImGui::BeginDisabled(glm::abs(pitch) < 0.01 && glm::abs(yaw) < 0.01 && glm::abs(roll) < 0.01);
+		if (ImGui::Button("reset", { -FLT_MIN, 0 })) {
+			pitch = 0;
+			yaw = 0;
+			roll = 0;
+			changedAngle = true;
+		}
+		ImGui::EndDisabled();
 		if (changedAngle) {
-			float x = 5.0f * cos(pitch) * sin(yaw);
-			float y = 5.0f * sin(pitch);
-			float z = 5.0f * cos(pitch) * cos(yaw);
+			glm::mat4 rotation = glm::yawPitchRoll(yaw, pitch, roll);
 
-			view = glm::lookAt({ x, y, z }, glm::vec3(0), { 0.0f, 1.0f, 0.0f });
+			view = glm::lookAt(glm::vec3(rotation * glm::vec4(0, 0, 3, 0)), glm::vec3(0), glm::vec3(rotation * glm::vec4(0, 1, 0, 0)));
 
 			program->setUniform("viewMatrix", view);
-		}
 
-		ImGui::SeparatorText("OpenGL modes");
+			changedAngle = false;
+		}
+		ImGui::End();
+
+		ImGui::Begin("OpenGL modes");
 		auto openGLToggle = [](GLenum flag, const char* name) {
 			bool isActive = glIsEnabled(flag);
 
 			if (ImGui::Checkbox(name, &isActive))
-				if (!isActive) // already toggled
+				if (!isActive) // already toggled, so use inverse
 					glDisable(flag);
 				else
 					glEnable(flag);
 
-			return isActive;
+			return isActive; // might be toggled already, but is ok because feature is enabled/disabled already then
 		};
 
 		openGLToggle(GL_DEPTH_TEST, "depth test");
 
-		if (openGLToggle(GL_CULL_FACE, "cull face")) {
-			const char* names[] = { "front", "back", };
-			GLenum values[] = { GL_FRONT, GL_BACK, };
-			static int value = 1;
+		if (openGLToggle(GL_BLEND, "alpha")) {
+			const char* names[] = {
+				"zero", "one",
+				"src_color", "one_minus_src_color", "dst_color", "one_minus_dst_color",
+				"src_alpha", "one_minus_src_alpha", "dst_alpha", "one_minus_dst_alpha",
+				"constant_color", "one_minus_constant_color", "constant_alpha", "one_minus_constant_alpha",
+			};
+			GLenum values[] = {
+				GL_ZERO, GL_ONE,
+				GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
+				GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA,
+				GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA,
+			};
+			static int src = 6;
+			static int dst = 7;
 			bool update = false;
 
 			ImGui::Indent();
-			for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
-				if (i > 0)
-					ImGui::SameLine();
-				update |= ImGui::RadioButton(names[i], &value, i);
+			if (ImGui::BeginCombo("blend source", names[src])) {
+				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+					const bool is_selected = src == i;
+					if (ImGui::Selectable(names[i], is_selected)) {
+						src = i;
+						update = true;
+					}
+
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+			if (ImGui::BeginCombo("blend destination", names[dst])) {
+				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+					const bool is_selected = dst == i;
+					if (ImGui::Selectable(names[i], is_selected)) {
+						dst = i;
+						update = true;
+					}
+
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
 			}
 			ImGui::Unindent();
 
 			if (update)
-				glCullFace(values[value]);
+				glBlendFunc(values[src], values[dst]);
+		}
+
+		if (openGLToggle(GL_CULL_FACE, "cull face")) {
+			{
+				const char* names[] = { "front", "back", };
+				GLenum values[] = { GL_FRONT, GL_BACK, };
+				static int value = 1;
+				bool update = false;
+
+				ImGui::Indent();
+				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+					if (i > 0)
+						ImGui::SameLine();
+					update |= ImGui::RadioButton(names[i], &value, i);
+				}
+				ImGui::Unindent();
+
+				if (update)
+					glCullFace(values[value]);
+			}
+			{
+				const char* names[] = { "clockwise", "counterclockwise", };
+				GLenum values[] = { GL_CW, GL_CCW, };
+				static int value = 1;
+				bool update = false;
+
+				ImGui::Indent();
+				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+					if (i > 0)
+						ImGui::SameLine();
+					update |= ImGui::RadioButton(names[i], &value, i);
+				}
+				ImGui::Unindent();
+
+				if (update)
+					glFrontFace(values[value]);
+			}
 		}
 
 		{
@@ -323,8 +546,8 @@ int main() {
 				glGetFloatv(GL_POINT_SIZE_RANGE, range);
 				glGetFloatv(GL_POINT_SIZE, &currentSize);
 
-				if (ImGui::SliderFloat("Point size", &currentSize, range[0], range[1], "%.3f", ImGuiSliderFlags_Logarithmic))
-					glPointSize(currentSize);
+				if (ImGui::SliderFloat("Point size", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_Logarithmic))
+					glPointSize(glm::clamp(currentSize, range[0], range[1]));
 			} break;
 			case GL_LINE: {
 				bool isSmooth = glIsEnabled(GL_LINE_SMOOTH);
@@ -334,10 +557,12 @@ int main() {
 				glGetFloatv(isSmooth ? GL_SMOOTH_LINE_WIDTH_RANGE : GL_ALIASED_LINE_WIDTH_RANGE, range);
 				glGetFloatv(GL_LINE_WIDTH, &currentSize);
 
-				if (ImGui::SliderFloat("line width", &currentSize, range[0], range[1]))
-					glLineWidth(currentSize);
+				bool isChanged = ImGui::SliderFloat("line width", &currentSize, range[0], range[1]);
+				isChanged |= openGLToggle(GL_LINE_SMOOTH, "use smooth lines") == isSmooth;
 
-				openGLToggle(GL_LINE_SMOOTH, "use smooth lines");
+				if (isChanged)
+					glLineWidth(glm::clamp(currentSize, range[0], range[1]));
+
 			} break;
 			}
 			ImGui::Unindent();

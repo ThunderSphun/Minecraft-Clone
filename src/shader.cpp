@@ -178,7 +178,7 @@ namespace Minecraft::Assets {
 		return true;
 	}
 
-	std::shared_ptr<Shader> Shader::parse(std::filesystem::path path) {
+	std::shared_ptr<Shader> Shader::parse(const std::filesystem::path& path) {
 		std::filesystem::path extension = path.extension();
 		if (extension == ".vert") return parse(path, GL_VERTEX_SHADER);
 		if (extension == ".tesc") return parse(path, GL_TESS_CONTROL_SHADER);

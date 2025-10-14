@@ -8,7 +8,7 @@ namespace Minecraft::Assets {
 	}
 
 	EBO::EBO(EBO&& other) noexcept {
-		if (ebo)
+		if (ebo != 0)
 			glDeleteBuffers(1, &ebo);
 
 		this->ebo = other.ebo;
@@ -20,7 +20,7 @@ namespace Minecraft::Assets {
 
 	EBO& EBO::operator=(EBO&& other) noexcept {
 		if (this != &other) {
-			if (ebo)
+			if (ebo != 0)
 				glDeleteBuffers(1, &ebo);
 
 			this->ebo = other.ebo;
@@ -33,7 +33,7 @@ namespace Minecraft::Assets {
 	}
 
 	EBO::~EBO() {
-		if (ebo)
+		if (ebo != 0)
 			glDeleteBuffers(1, &ebo);
 	}
 

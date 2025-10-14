@@ -8,7 +8,7 @@ namespace Minecraft::Assets {
 	}
 
 	VBO::VBO(VBO&& other) noexcept {
-		if (vbo)
+		if (vbo != 0)
 			glDeleteBuffers(1, &vbo);
 
 		this->vbo = other.vbo;
@@ -20,7 +20,7 @@ namespace Minecraft::Assets {
 
 	VBO& VBO::operator=(VBO&& other) noexcept {
 		if (this != &other) {
-			if (vbo)
+			if (vbo != 0)
 				glDeleteBuffers(1, &vbo);
 
 			this->vbo = other.vbo;
@@ -33,7 +33,7 @@ namespace Minecraft::Assets {
 	}
 
 	VBO::~VBO() {
-		if (vbo)
+		if (vbo != 0)
 			glDeleteBuffers(1, &vbo);
 	}
 

@@ -13,7 +13,7 @@ namespace Minecraft::Assets {
 	class Shader;
 	class ShaderProgram;
 
-	// TODO think about making 'GLuint id' a shared_ptr instead, to get rid of needing shader to be a shared_ptr
+	// TODO think about making 'GLuint shader' a shared_ptr instead, to get rid of needing shader to be a shared_ptr
 	class Shader {
 	public:
 		Shader(GLenum shaderType);
@@ -30,7 +30,7 @@ namespace Minecraft::Assets {
 		bool loadShaderSource(const std::string& source);
 		bool loadShaderSource(const std::vector<std::string>& sources);
 
-		static [[nodiscard]] std::shared_ptr<Shader> parse(std::filesystem::path path);
+		static [[nodiscard]] std::shared_ptr<Shader> parse(const std::filesystem::path& path);
 		static [[nodiscard]] std::shared_ptr<Shader> parse(std::filesystem::path path, GLenum shaderType);
 		static [[nodiscard]] std::shared_ptr<Shader> parse(const std::string& source, GLenum shaderType);
 
@@ -47,7 +47,7 @@ namespace Minecraft::Assets {
 		std::vector<std::weak_ptr<ShaderProgram>> programs = {};
 	};
 
-	// TODO think about making 'GLuint id' a shared_ptr instead, to get rid of needing shader to be a shared_ptr
+	// TODO think about making 'GLuint program' a shared_ptr instead, to get rid of needing shader to be a shared_ptr
 	class ShaderProgram : public std::enable_shared_from_this<ShaderProgram> {
 	public:
 		ShaderProgram(const ShaderProgram&) = delete;

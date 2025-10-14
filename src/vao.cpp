@@ -8,7 +8,7 @@ namespace Minecraft::Assets {
 	}
 
 	VAO::VAO(VAO&& other) noexcept {
-		if (vao)
+		if (vao != 0)
 			glDeleteVertexArrays(1, &vao);
 
 		this->vao = other.vao;
@@ -22,7 +22,7 @@ namespace Minecraft::Assets {
 
 	VAO& VAO::operator=(VAO&& other) noexcept {
 		if (this != &other) {
-			if (vao)
+			if (vao != 0)
 				glDeleteVertexArrays(1, &vao);
 
 			this->vao = other.vao;
@@ -37,7 +37,7 @@ namespace Minecraft::Assets {
 	}
 
 	VAO::~VAO() {
-		if (vao)
+		if (vao != 0)
 			glDeleteVertexArrays(1, &vao);
 	}
 
