@@ -101,6 +101,225 @@ void init() {
 	std::atexit(ImGui_ImplOpenGL3_Shutdown);
 }
 
+void renderOpenGLConfigMenu() {
+	ImGui::Begin("OpenGL modes");
+	auto openGLToggle = [](GLenum flag, const char* name) {
+		bool isActive = glIsEnabled(flag);
+
+		if (ImGui::Checkbox(name, &isActive))
+			if (!isActive) // already toggled, so use inverse
+				glDisable(flag);
+			else
+				glEnable(flag);
+
+		return isActive; // might be toggled already, but is ok because feature is enabled/disabled already then
+	};
+
+	openGLToggle(GL_DEPTH_TEST, "depth test");
+
+	if (openGLToggle(GL_BLEND, "alpha")) {
+		GLenum funcValues[] = {
+			GL_ZERO, GL_ONE,
+			GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
+			GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA,
+			GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA,
+		};
+		auto funcCombo = [](const char* name, int& value) {
+			const char* names[] = {
+				"zero", "one",
+				"src_color", "one_minus_src_color", "dst_color", "one_minus_dst_color",
+				"src_alpha", "one_minus_src_alpha", "dst_alpha", "one_minus_dst_alpha",
+				"constant_color", "one_minus_constant_color", "constant_alpha", "one_minus_constant_alpha",
+			};
+
+			bool update = false;
+
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x / 2);
+			if (ImGui::BeginCombo(name, names[value])) {
+				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+					const bool is_selected = value == i;
+					if (ImGui::Selectable(names[i], is_selected)) {
+						value = i;
+						update = true;
+					}
+
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+			return update;
+		};
+		int srcRGB = 0;
+		int srcA = 0;
+		int dstRGB = 0;
+		int dstA = 0;
+		glGetIntegerv(GL_BLEND_SRC_RGB, &srcRGB);
+		glGetIntegerv(GL_BLEND_SRC_ALPHA, &srcA);
+		glGetIntegerv(GL_BLEND_DST_RGB, &dstRGB);
+		glGetIntegerv(GL_BLEND_DST_ALPHA, &dstA);
+		for (size_t i = 0; i < sizeof(funcValues) / sizeof(funcValues[0]); i++) {
+			if (srcRGB == funcValues[i]) srcRGB = i;
+			if (srcA   == funcValues[i]) srcA   = i;
+			if (dstRGB == funcValues[i]) dstRGB = i;
+			if (dstA   == funcValues[i]) dstA   = i;
+		}
+
+		GLenum equationValues[] = { GL_FUNC_ADD, GL_FUNC_SUBTRACT, GL_FUNC_REVERSE_SUBTRACT, GL_MIN, GL_MAX, };
+		auto equationCombo = [](const char* name, int& value) {
+			const char* names[] = { "add", "subtract", "reverse subtract", "min", "max", };
+
+			bool update = false;
+
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x / 2);
+			if (ImGui::BeginCombo(name, names[value])) {
+				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+					const bool is_selected = value == i;
+					if (ImGui::Selectable(names[i], is_selected)) {
+						value = i;
+						update = true;
+					}
+
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+			return update;
+		};
+		int equationRGB = 0;
+		int equationA = 0;
+		glGetIntegerv(GL_BLEND_EQUATION_RGB, &equationRGB);
+		glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &equationA);
+		for (size_t i = 0; i < sizeof(equationValues) / sizeof(equationValues[0]); i++) {
+			if (equationRGB == equationValues[i]) equationRGB = i;
+			if (equationA   == equationValues[i]) equationA   = i;
+		}
+
+		static bool useSeperate = false;
+		bool funcUpdate = false;
+		bool equationUpdate = false;
+
+		ImGui::Indent();
+		ImGui::Checkbox("use seperate", &useSeperate);
+
+		funcUpdate |= funcCombo("blend source", srcRGB);
+		if (useSeperate) funcUpdate |= funcCombo("blend source alpha", srcA);
+		funcUpdate |= funcCombo("blend dest", dstRGB);
+		if (useSeperate) funcUpdate |= funcCombo("blend dest alpha", dstA);
+
+		if (srcRGB >= 10 || srcA >= 10 || dstRGB >= 10 || dstA >= 10) {
+			glm::vec4 color(0, 0, 0, 1);
+			glGetFloatv(GL_BLEND_COLOR, glm::value_ptr(color));
+
+			if (ImGui::ColorEdit4("blend color", glm::value_ptr(color)))
+				glBlendColor(color.r, color.g, color.b, color.a);
+		}
+
+		equationUpdate |= equationCombo("blend equation", equationRGB);
+		if (useSeperate) equationUpdate |= equationCombo("blend equation alpha", equationA);
+		ImGui::Unindent();
+
+		if (funcUpdate) {
+			if (useSeperate)
+				glBlendFuncSeparate(funcValues[srcRGB], funcValues[dstRGB], funcValues[srcA], funcValues[dstA]);
+			else
+				glBlendFunc(funcValues[srcRGB], funcValues[dstRGB]);
+		}
+		if (equationUpdate) {
+			if (useSeperate)
+				glBlendEquationSeparate(equationValues[equationRGB], equationValues[equationA]);
+			else
+				glBlendEquation(equationValues[equationRGB]);
+		}
+	}
+
+	if (openGLToggle(GL_CULL_FACE, "cull face")) {
+		{
+			const char* names[] = { "front", "back", };
+			GLenum values[] = { GL_FRONT, GL_BACK, };
+			static int value = 1;
+			bool update = false;
+
+			ImGui::Indent();
+			for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+				if (i > 0)
+					ImGui::SameLine();
+				update |= ImGui::RadioButton(names[i], &value, i);
+			}
+			ImGui::Unindent();
+
+			if (update)
+				glCullFace(values[value]);
+		}
+		{
+			const char* names[] = { "clockwise", "counterclockwise", };
+			GLenum values[] = { GL_CW, GL_CCW, };
+			static int value = 1;
+			bool update = false;
+
+			ImGui::Indent();
+			for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+				if (i > 0)
+					ImGui::SameLine();
+				update |= ImGui::RadioButton(names[i], &value, i);
+			}
+			ImGui::Unindent();
+
+			if (update)
+				glFrontFace(values[value]);
+		}
+	}
+
+	{
+		const char* names[] = { "point", "line", "fill", };
+		GLenum values[] = { GL_POINT, GL_LINE, GL_FILL, };
+		static int value = 2;
+		bool update = false;
+
+		for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+			if (i > 0)
+				ImGui::SameLine();
+			update |= ImGui::RadioButton(names[i], &value, i);
+		}
+
+		if (update)
+			glPolygonMode(GL_FRONT_AND_BACK, values[value]);
+
+		ImGui::Indent();
+		switch (values[value]) {
+		case GL_POINT: {
+			float range[] = { 1, 1 };
+			float currentSize = 1;
+
+			glGetFloatv(GL_POINT_SIZE_RANGE, range);
+			glGetFloatv(GL_POINT_SIZE, &currentSize);
+
+			if (ImGui::SliderFloat("Point size", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_Logarithmic))
+				glPointSize(glm::clamp(currentSize, range[0], range[1]));
+		} break;
+		case GL_LINE: {
+			bool isSmooth = glIsEnabled(GL_LINE_SMOOTH);
+			float range[] = { 1, 1 };
+			float currentSize = 1;
+
+			glGetFloatv(isSmooth ? GL_SMOOTH_LINE_WIDTH_RANGE : GL_ALIASED_LINE_WIDTH_RANGE, range);
+			glGetFloatv(GL_LINE_WIDTH, &currentSize);
+
+			bool isChanged = ImGui::SliderFloat("line width", &currentSize, range[0], range[1]);
+			isChanged |= openGLToggle(GL_LINE_SMOOTH, "use smooth lines") == isSmooth;
+
+			if (isChanged)
+				glLineWidth(glm::clamp(currentSize, range[0], range[1]));
+
+		} break;
+		}
+		ImGui::Unindent();
+	}
+
+	ImGui::End();
+}
+
 int main() {
 	init();
 
@@ -183,7 +402,7 @@ int main() {
 		{0, 1, 1, 1},
 		{0, 0, 1, 1},
 		{1, 1, 0, 1},
-		
+
 		// right
 		{0, 0, 1, 1},
 		{1, 1, 0, 1},
@@ -420,155 +639,7 @@ int main() {
 		}
 		ImGui::End();
 
-		ImGui::Begin("OpenGL modes");
-		auto openGLToggle = [](GLenum flag, const char* name) {
-			bool isActive = glIsEnabled(flag);
-
-			if (ImGui::Checkbox(name, &isActive))
-				if (!isActive) // already toggled, so use inverse
-					glDisable(flag);
-				else
-					glEnable(flag);
-
-			return isActive; // might be toggled already, but is ok because feature is enabled/disabled already then
-		};
-
-		openGLToggle(GL_DEPTH_TEST, "depth test");
-
-		if (openGLToggle(GL_BLEND, "alpha")) {
-			const char* names[] = {
-				"zero", "one",
-				"src_color", "one_minus_src_color", "dst_color", "one_minus_dst_color",
-				"src_alpha", "one_minus_src_alpha", "dst_alpha", "one_minus_dst_alpha",
-				"constant_color", "one_minus_constant_color", "constant_alpha", "one_minus_constant_alpha",
-			};
-			GLenum values[] = {
-				GL_ZERO, GL_ONE,
-				GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
-				GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA,
-				GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA,
-			};
-			static int src = 6;
-			static int dst = 7;
-			bool update = false;
-
-			ImGui::Indent();
-			if (ImGui::BeginCombo("blend source", names[src])) {
-				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
-					const bool is_selected = src == i;
-					if (ImGui::Selectable(names[i], is_selected)) {
-						src = i;
-						update = true;
-					}
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-			if (ImGui::BeginCombo("blend destination", names[dst])) {
-				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
-					const bool is_selected = dst == i;
-					if (ImGui::Selectable(names[i], is_selected)) {
-						dst = i;
-						update = true;
-					}
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-				ImGui::EndCombo();
-			}
-			ImGui::Unindent();
-
-			if (update)
-				glBlendFunc(values[src], values[dst]);
-		}
-
-		if (openGLToggle(GL_CULL_FACE, "cull face")) {
-			{
-				const char* names[] = { "front", "back", };
-				GLenum values[] = { GL_FRONT, GL_BACK, };
-				static int value = 1;
-				bool update = false;
-
-				ImGui::Indent();
-				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
-					if (i > 0)
-						ImGui::SameLine();
-					update |= ImGui::RadioButton(names[i], &value, i);
-				}
-				ImGui::Unindent();
-
-				if (update)
-					glCullFace(values[value]);
-			}
-			{
-				const char* names[] = { "clockwise", "counterclockwise", };
-				GLenum values[] = { GL_CW, GL_CCW, };
-				static int value = 1;
-				bool update = false;
-
-				ImGui::Indent();
-				for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
-					if (i > 0)
-						ImGui::SameLine();
-					update |= ImGui::RadioButton(names[i], &value, i);
-				}
-				ImGui::Unindent();
-
-				if (update)
-					glFrontFace(values[value]);
-			}
-		}
-
-		{
-			const char* names[] = { "point", "line", "fill", };
-			GLenum values[] = { GL_POINT, GL_LINE, GL_FILL, };
-			static int value = 2;
-			bool update = false;
-
-			for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
-				if (i > 0)
-					ImGui::SameLine();
-				update |= ImGui::RadioButton(names[i], &value, i);
-			}
-
-			if (update)
-				glPolygonMode(GL_FRONT_AND_BACK, values[value]);
-
-			ImGui::Indent();
-			switch (values[value]) {
-			case GL_POINT: {
-				float range[] = { 1, 1 };
-				float currentSize = 1;
-
-				glGetFloatv(GL_POINT_SIZE_RANGE, range);
-				glGetFloatv(GL_POINT_SIZE, &currentSize);
-
-				if (ImGui::SliderFloat("Point size", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_Logarithmic))
-					glPointSize(glm::clamp(currentSize, range[0], range[1]));
-			} break;
-			case GL_LINE: {
-				bool isSmooth = glIsEnabled(GL_LINE_SMOOTH);
-				float range[] = { 1, 1 };
-				float currentSize = 1;
-
-				glGetFloatv(isSmooth ? GL_SMOOTH_LINE_WIDTH_RANGE : GL_ALIASED_LINE_WIDTH_RANGE, range);
-				glGetFloatv(GL_LINE_WIDTH, &currentSize);
-
-				bool isChanged = ImGui::SliderFloat("line width", &currentSize, range[0], range[1]);
-				isChanged |= openGLToggle(GL_LINE_SMOOTH, "use smooth lines") == isSmooth;
-
-				if (isChanged)
-					glLineWidth(glm::clamp(currentSize, range[0], range[1]));
-
-			} break;
-			}
-			ImGui::Unindent();
-		}
-
-		ImGui::End();
+		renderOpenGLConfigMenu();
 
 		ImGui::ShowDemoWindow();
 
