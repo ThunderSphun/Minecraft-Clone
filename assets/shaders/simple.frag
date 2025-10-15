@@ -11,7 +11,7 @@ out vec4 fragColor;
 void main() {
 	vec4 c = color;
 
-	c *= texture2D(s_texture, texCoord);
+	c *= texture(s_texture, texCoord);
 	//c *= (sin(time) / 4) + 0.75;
 
 	fragColor = c;

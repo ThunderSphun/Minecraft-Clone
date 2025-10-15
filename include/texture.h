@@ -16,7 +16,7 @@ namespace Minecraft::Assets {
 		Texture2D& operator=(Texture2D&& other) noexcept;
 		~Texture2D();
 
-		static [[nodiscard]] std::shared_ptr<Texture2D> load(std::filesystem::path path);
+		[[nodiscard]] static std::shared_ptr<Texture2D> load(std::filesystem::path path);
 
 		void bind();
 

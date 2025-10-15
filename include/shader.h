@@ -30,9 +30,9 @@ namespace Minecraft::Assets {
 		bool loadShaderSource(const std::string& source);
 		bool loadShaderSource(const std::vector<std::string>& sources);
 
-		static [[nodiscard]] std::shared_ptr<Shader> parse(const std::filesystem::path& path);
-		static [[nodiscard]] std::shared_ptr<Shader> parse(std::filesystem::path path, GLenum shaderType);
-		static [[nodiscard]] std::shared_ptr<Shader> parse(const std::string& source, GLenum shaderType);
+		[[nodiscard]] static std::shared_ptr<Shader> parse(const std::filesystem::path& path);
+		[[nodiscard]] static std::shared_ptr<Shader> parse(std::filesystem::path path, GLenum shaderType);
+		[[nodiscard]] static std::shared_ptr<Shader> parse(const std::string& source, GLenum shaderType);
 
 		using Program = ShaderProgram;
 
@@ -56,7 +56,7 @@ namespace Minecraft::Assets {
 		ShaderProgram& operator=(ShaderProgram&& other) noexcept;
 		~ShaderProgram();
 
-		static [[nodiscard]] std::shared_ptr<ShaderProgram> create();
+		[[nodiscard]] static std::shared_ptr<ShaderProgram> create();
 
 		std::shared_ptr<ShaderProgram> attachShader(std::weak_ptr<Shader> shader);
 		std::shared_ptr<ShaderProgram> detachShader(std::weak_ptr<Shader> shader);
