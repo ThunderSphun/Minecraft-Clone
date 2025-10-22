@@ -115,7 +115,39 @@ void renderOpenGLConfigMenu() {
 		return isActive; // might be toggled already, but is ok because feature is enabled/disabled already then
 	};
 
-	openGLToggle(GL_DEPTH_TEST, "depth test");
+	if (openGLToggle(GL_DEPTH_TEST, "depth test")) {
+		ImGui::Indent();
+
+		static bool clearDepthBuffer = true;
+		ImGui::Checkbox("auto clear depth buffer", &clearDepthBuffer);
+		if (clearDepthBuffer || ImGui::Button("clear depth buffer"))
+			glClear(GL_DEPTH_BUFFER_BIT);
+
+		const char* names[] = { "false", "a < b", "a == b", "a <= b", "a > b", "a != b", "a >= b", "true", };
+		GLenum values[] = { GL_NEVER, GL_LESS, GL_EQUAL, GL_LEQUAL, GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_ALWAYS, };
+
+		int value = 0;
+		glGetIntegerv(GL_DEPTH_FUNC, &value);
+		for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); i++)
+			if (value == values[i])
+				value = i;
+
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x / 2);
+		if (ImGui::BeginCombo("depth function", names[value])) {
+			for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+				const bool is_selected = value == i;
+				if (ImGui::Selectable(names[i], is_selected)) {
+					value = i;
+					glDepthFunc(values[i]);
+				}
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::Unindent();
+	}
 
 	if (openGLToggle(GL_BLEND, "alpha")) {
 		GLenum funcValues[] = {
@@ -556,7 +588,7 @@ int main() {
 		ImGui::NewFrame();
 
 		glClearColor(bgCol.r, bgCol.g, bgCol.b, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT);
 
 		ImGui::Begin("Debug menu");
 		ImGui::Text("frame duration: %f", time - pTime);
