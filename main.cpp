@@ -364,7 +364,7 @@ int main() {
 		->link()
 		->use();
 
-	std::shared_ptr<Minecraft::Assets::Texture2D> img = Minecraft::Assets::Texture2D::load(std::filesystem::path("test.png"));
+	std::shared_ptr<Minecraft::Assets::Texture2D> img = Minecraft::Assets::Texture2D::load(std::filesystem::path("blocks.png"));
 
 	ImGuiIO& io = ImGui::GetIO();
 
