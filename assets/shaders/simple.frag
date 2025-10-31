@@ -12,6 +12,8 @@ void main() {
 	vec4 c = color;
 
 	c *= texture(s_texture, texCoord);
+	if (c.a < 0.01)
+		discard;
 	//c *= (sin(time) / 4) + 0.75;
 
 	fragColor = c;

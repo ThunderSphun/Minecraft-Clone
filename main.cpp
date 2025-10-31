@@ -43,7 +43,7 @@ void init() {
 	if (window == nullptr)
 		exit(-1);
 
-	std::atexit([](){glfwDestroyWindow(window);});
+	std::atexit([]() { glfwDestroyWindow(window); });
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 
@@ -67,14 +67,14 @@ void init() {
 	});
 
 	cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
-	std::atexit([](){glfwDestroyCursor(cursor);});
+	std::atexit([]() { glfwDestroyCursor(cursor); });
 	glfwSetCursor(window, cursor);
 
 	if (!IMGUI_CHECKVERSION())
 		exit(-1);
 
 	ImGui::CreateContext();
-	std::atexit([](){ImGui::DestroyContext();});
+	std::atexit([]() { ImGui::DestroyContext(); });
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
@@ -95,7 +95,7 @@ void init() {
 
 	std::atexit(ImGui_ImplGlfw_Shutdown);
 
-	if (!ImGui_ImplOpenGL3_Init("#version 430"))
+	if (!ImGui_ImplOpenGL3_Init("#version 460"))
 		exit(-1);
 
 	std::atexit(ImGui_ImplOpenGL3_Shutdown);
@@ -327,7 +327,7 @@ void renderOpenGLConfigMenu() {
 			glGetFloatv(GL_POINT_SIZE_RANGE, range);
 			glGetFloatv(GL_POINT_SIZE, &currentSize);
 
-			if (ImGui::SliderFloat("Point size", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_Logarithmic))
+			if (ImGui::SliderFloat("Point size", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_ClampOnInput))
 				glPointSize(glm::clamp(currentSize, range[0], range[1]));
 		} break;
 		case GL_LINE: {
@@ -338,7 +338,7 @@ void renderOpenGLConfigMenu() {
 			glGetFloatv(isSmooth ? GL_SMOOTH_LINE_WIDTH_RANGE : GL_ALIASED_LINE_WIDTH_RANGE, range);
 			glGetFloatv(GL_LINE_WIDTH, &currentSize);
 
-			bool isChanged = ImGui::SliderFloat("line width", &currentSize, range[0], range[1]);
+			bool isChanged = ImGui::SliderFloat("line width", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_ClampOnInput);
 			isChanged |= openGLToggle(GL_LINE_SMOOTH, "use smooth lines") == isSmooth;
 
 			if (isChanged)
@@ -495,15 +495,17 @@ int main() {
 		[vertices, colors, texcoords]() {
 			return Minecraft::Assets::VBO::create([vertices, colors, texcoords](GLuint vbo) {
 				glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors) + sizeof(texcoords), nullptr, GL_STATIC_DRAW);
+
 				glNamedBufferSubData(vbo, 0, sizeof(vertices), vertices);
 				glNamedBufferSubData(vbo, sizeof(vertices), sizeof(colors), colors);
 				glNamedBufferSubData(vbo, sizeof(vertices) + sizeof(colors), sizeof(texcoords), texcoords);
 
 				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
-				glEnableVertexAttribArray(0);
 				glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (GLvoid*) sizeof(vertices));
-				glEnableVertexAttribArray(1);
 				glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (GLvoid*) (sizeof(vertices) + sizeof(colors)));
+
+				glEnableVertexAttribArray(0);
+				glEnableVertexAttribArray(1);
 				glEnableVertexAttribArray(2);
 
 				return sizeof(vertices) / sizeof(vertices[0]);
@@ -605,7 +607,6 @@ int main() {
 				model = glm::mat4(1);
 				if (renderCube2)
 					model = glm::translate(model, { -0.5, 0, 0 });
-				model = glm::scale(model, { 1, 1, 1 });
 
 				program->setUniform("modelMatrix", model);
 
@@ -616,7 +617,6 @@ int main() {
 				model = glm::mat4(1);
 				if (renderCube1)
 					model = glm::translate(model, { 0.5, 0, 0 });
-				model = glm::scale(model, { -1, 1, 1 });
 
 				program->setUniform("modelMatrix", model);
 				cube2.draw();
@@ -627,7 +627,7 @@ int main() {
 		static float roll = 0;
 		static bool changedAngle = true;
 		ImGui::BeginGroup();
-		changedAngle |= ImGui::SliderAngle("pitch", &pitch, -89, 89);
+		changedAngle |= ImGui::SliderAngle("pitch", &pitch, -90, 90);
 		changedAngle |= ImGui::SliderAngle("Yaw", &yaw);
 		changedAngle |= ImGui::SliderAngle("Roll", &roll);
 		ImGui::EndGroup();
