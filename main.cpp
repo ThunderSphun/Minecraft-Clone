@@ -327,7 +327,7 @@ void renderOpenGLConfigMenu() {
 			glGetFloatv(GL_POINT_SIZE_RANGE, range);
 			glGetFloatv(GL_POINT_SIZE, &currentSize);
 
-			if (ImGui::SliderFloat("Point size", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_ClampOnInput))
+			if (ImGui::SliderFloat("Point size", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp))
 				glPointSize(glm::clamp(currentSize, range[0], range[1]));
 		} break;
 		case GL_LINE: {
@@ -338,7 +338,7 @@ void renderOpenGLConfigMenu() {
 			glGetFloatv(isSmooth ? GL_SMOOTH_LINE_WIDTH_RANGE : GL_ALIASED_LINE_WIDTH_RANGE, range);
 			glGetFloatv(GL_LINE_WIDTH, &currentSize);
 
-			bool isChanged = ImGui::SliderFloat("line width", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_ClampOnInput);
+			bool isChanged = ImGui::SliderFloat("line width", &currentSize, range[0], range[1], nullptr, ImGuiSliderFlags_AlwaysClamp);
 			isChanged |= openGLToggle(GL_LINE_SMOOTH, "use smooth lines") == isSmooth;
 
 			if (isChanged)
@@ -352,33 +352,8 @@ void renderOpenGLConfigMenu() {
 	ImGui::End();
 }
 
-int main() {
-	init();
-
-	std::shared_ptr<Minecraft::Assets::Shader::Program> program = Minecraft::Assets::Shader::Program::create();
-	program
-		->attachShader(Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_VERTEX_SHADER))
-		->attachShader(Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_FRAGMENT_SHADER))
-		->bindAttribute(0, "a_position")
-		->bindAttribute(1, "a_color")
-		->link()
-		->use();
-
-	std::shared_ptr<Minecraft::Assets::Texture2D> img = Minecraft::Assets::Texture2D::load(std::filesystem::path("blocks.png"));
-
-	ImGuiIO& io = ImGui::GetIO();
-
-	glm::vec3 bgCol(0.9, 0.9, 1.0f);
-
-	glm::mat4 model = glm::mat4(1);
-	glm::mat4 view = glm::mat4(1);
-	glm::mat4 proj = glm::perspective(45.0f, 1080 / 720.0f, 0.1f, 100.0f);
-
-	program->setUniform("modelMatrix", model);
-	program->setUniform("viewMatrix", view);
-	program->setUniform("projectionMatrix", proj);
-
-	glm::vec3 vertices[] = {
+Minecraft::Assets::VAO createCube(uint8_t atlasIndex) {
+	static const glm::vec3 vertices[] = {
 		// back
 		{-0.5f, -0.5f, -0.5f},
 		{-0.5f, +0.5f, -0.5f},
@@ -412,7 +387,7 @@ int main() {
 		{-0.5f, +0.5f, -0.5f},
 		{-0.5f, +0.5f, +0.5f},
 	};
-	glm::vec4 colors[] = {
+	static const glm::vec4 colors[] = {
 		// back
 		{1, 0, 0, 1},
 		{0, 1, 0, 1},
@@ -446,41 +421,7 @@ int main() {
 		{0, 1, 0, 1},
 		{1, 0, 1, 1},
 	};
-	glm::vec2 texcoords[] = {
-		// back
-		{0, 0},
-		{0, 1},
-		{1, 0},
-		{1, 1},
-		// front
-		{1, 0},
-		{1, 1},
-		{0, 0},
-		{0, 1},
-
-		// top
-		{1, 1},
-		{1, 0},
-		{0, 1},
-		{0, 0},
-		// bottom
-		{1, 1},
-		{1, 0},
-		{0, 1},
-		{0, 0},
-
-		// right
-		{0, 0},
-		{1, 0},
-		{0, 1},
-		{1, 1},
-		// left
-		{1, 0},
-		{0, 0},
-		{1, 1},
-		{0, 1},
-	};
-	uint32_t indices[] = {
+	static const uint32_t indices[] = {
 		 0,  2,  1,   2,  3,  1, // Back
 		 4,  5,  6,   6,  5,  7, // Front
 
@@ -490,10 +431,48 @@ int main() {
 		16, 17, 18,  17, 19, 18, // Right
 		20, 22, 21,  21, 22, 23, // Left
 	};
+	static const glm::vec2 spriteSize = {1 / 16.0, 1 / 16.0};
 
-	Minecraft::Assets::VAO cube1 = Minecraft::Assets::VAO::create(
-		[vertices, colors, texcoords]() {
-			return Minecraft::Assets::VBO::create([vertices, colors, texcoords](GLuint vbo) {
+	glm::vec2 uvCorner = {spriteSize.x * (atlasIndex % 16), spriteSize.y * (atlasIndex / 16)};
+
+	glm::vec2 texcoords[] = {
+		// back
+		uvCorner + spriteSize * glm::vec2{0, 0},
+		uvCorner + spriteSize * glm::vec2{0, 1},
+		uvCorner + spriteSize * glm::vec2{1, 0},
+		uvCorner + spriteSize * glm::vec2{1, 1},
+		// front
+		uvCorner + spriteSize * glm::vec2{1, 0},
+		uvCorner + spriteSize * glm::vec2{1, 1},
+		uvCorner + spriteSize * glm::vec2{0, 0},
+		uvCorner + spriteSize * glm::vec2{0, 1},
+
+		// top
+		uvCorner + spriteSize * glm::vec2{1, 1},
+		uvCorner + spriteSize * glm::vec2{1, 0},
+		uvCorner + spriteSize * glm::vec2{0, 1},
+		uvCorner + spriteSize * glm::vec2{0, 0},
+		// bottom
+		uvCorner + spriteSize * glm::vec2{1, 1},
+		uvCorner + spriteSize * glm::vec2{1, 0},
+		uvCorner + spriteSize * glm::vec2{0, 1},
+		uvCorner + spriteSize * glm::vec2{0, 0},
+
+		// right
+		uvCorner + spriteSize * glm::vec2{0, 0},
+		uvCorner + spriteSize * glm::vec2{1, 0},
+		uvCorner + spriteSize * glm::vec2{0, 1},
+		uvCorner + spriteSize * glm::vec2{1, 1},
+		// left
+		uvCorner + spriteSize * glm::vec2{1, 0},
+		uvCorner + spriteSize * glm::vec2{0, 0},
+		uvCorner + spriteSize * glm::vec2{1, 1},
+		uvCorner + spriteSize * glm::vec2{0, 1},
+	};
+
+	return Minecraft::Assets::VAO::create(
+		[texcoords]() {
+			return Minecraft::Assets::VBO::create([texcoords](GLuint vbo) {
 				glNamedBufferData(vbo, sizeof(vertices) + sizeof(colors) + sizeof(texcoords), nullptr, GL_STATIC_DRAW);
 
 				glNamedBufferSubData(vbo, 0, sizeof(vertices), vertices);
@@ -511,8 +490,8 @@ int main() {
 				return sizeof(vertices) / sizeof(vertices[0]);
 			});
 		},
-		[indices]() {
-			return Minecraft::Assets::EBO::create([indices](GLuint ebo) {
+		[]() {
+			return Minecraft::Assets::EBO::create([](GLuint ebo) {
 				glNamedBufferData(ebo, sizeof(indices), nullptr, GL_STATIC_DRAW);
 				glNamedBufferSubData(ebo, 0, sizeof(indices), indices);
 
@@ -520,45 +499,37 @@ int main() {
 			});
 		}
 	);
+}
 
-	Minecraft::Assets::VAO cube2 = Minecraft::Assets::VAO::create(
-		{
-			[vertices]() {
-				return Minecraft::Assets::VBO::create([vertices](GLuint vbo) {
-					glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-					glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), 0);
-					glEnableVertexAttribArray(0);
+int main() {
+	init();
 
-					return sizeof(vertices) / sizeof(vertices[0]);
-				});
-			},
-			[colors]() {
-				return Minecraft::Assets::VBO::create([colors](GLuint vbo) {
-					glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
-					glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), 0);
-					glEnableVertexAttribArray(1);
+	std::shared_ptr<Minecraft::Assets::Shader::Program> program = Minecraft::Assets::Shader::Program::create();
+	program
+		->attachShader(Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_VERTEX_SHADER))
+		->attachShader(Minecraft::Assets::Shader::parse(std::filesystem::path("simple"), GL_FRAGMENT_SHADER))
+		->bindAttribute(0, "a_position")
+		->bindAttribute(1, "a_color")
+		->bindAttribute(2, "a_texcoord")
+		->link()
+		->use();
 
-					return sizeof(colors) / sizeof(colors[0]);
-				});
-			},
-			[texcoords]() {
-				return Minecraft::Assets::VBO::create([texcoords](GLuint vbo) {
-					glBufferData(GL_ARRAY_BUFFER, sizeof(texcoords), texcoords, GL_STATIC_DRAW);
-					glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), 0);
-					glEnableVertexAttribArray(2);
+	std::shared_ptr<Minecraft::Assets::Texture2D> img = Minecraft::Assets::Texture2D::load(std::filesystem::path("blocks.png"));
 
-					return sizeof(texcoords) / sizeof(texcoords[0]);
-				});
-			},
-		},
-		[indices]() {
-			return Minecraft::Assets::EBO::create([indices](GLuint ebo) {
-				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	ImGuiIO& io = ImGui::GetIO();
 
-				return sizeof(indices) / sizeof(indices[0]);
-			});
-		}
-	);
+	glm::vec3 bgCol(0.9, 0.9, 1.0f);
+
+	glm::mat4 model = glm::mat4(1);
+	glm::mat4 view = glm::mat4(1);
+	glm::mat4 proj = glm::perspective(45.0f, 1080 / 720.0f, 0.1f, 100.0f);
+
+	program->setUniform("modelMatrix", model);
+	program->setUniform("viewMatrix", view);
+	program->setUniform("projectionMatrix", proj);
+
+	Minecraft::Assets::VAO cube1 = createCube(0);
+	Minecraft::Assets::VAO cube2 = createCube(1);
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -672,6 +643,25 @@ int main() {
 		ImGui::End();
 
 		renderOpenGLConfigMenu();
+
+		if (ImGui::Begin("textures")) {
+			static glm::ivec2 uv{0, 0};
+			ImGui::Text("texture atlas");
+			ImVec2 pos = ImGui::GetCursorScreenPos();
+			ImGui::Image(img->getId(), ImVec2(img->getSize().x, img->getSize().y));
+			if (io.MouseClicked[0]) {
+				glm::vec2 clickedPos{io.MousePos.x - pos.x, io.MousePos.y - pos.y};
+				clickedPos /= 16;
+				if (
+					clickedPos.x >= 0 && clickedPos.x < 16 &&
+					clickedPos.y >= 0 && clickedPos.y < 16
+				)
+					uv = (glm::ivec2) clickedPos;
+			}
+			ImGui::SliderInt2("uvs", glm::value_ptr(uv), 0, 15, nullptr, ImGuiSliderFlags_AlwaysClamp);
+			ImGui::Image(img->getId(), {128, 128}, {uv.x / 16.0f, uv.y / 16.0f}, {(uv.x + 1) / 16.0f, (uv.y + 1) / 16.0f});
+		}
+		ImGui::End();
 
 		ImGui::ShowDemoWindow();
 

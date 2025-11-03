@@ -21,6 +21,7 @@ namespace Minecraft::Assets {
 		void bind();
 
 		glm::ivec2 getSize() const;
+		GLuint getId() const;
 
 		Texture2D(const uint8_t* data, int width, int height);
 	private:

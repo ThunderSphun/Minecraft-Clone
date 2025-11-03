@@ -72,7 +72,7 @@ namespace Minecraft::Assets {
 		std::ifstream in(path, std::ios::binary);
 		in.read((char*) rawData, size);
 
-		stbi_set_flip_vertically_on_load(true);
+		stbi_set_flip_vertically_on_load(false);
 		const uint8_t* imgData = stbi_load_from_memory((uint8_t*) rawData, size, &w, &h, nullptr, 4);
 		delete[] rawData;
 
@@ -82,6 +82,7 @@ namespace Minecraft::Assets {
 			return texture;
 		} else {
 			std::cerr << "couldn't load image: '" << stbi_failure_reason() << "'" << std::endl;
+			return nullptr;
 		}
 	}
 
@@ -91,5 +92,9 @@ namespace Minecraft::Assets {
 
 	glm::ivec2 Texture2D::getSize() const {
 		return size;
+	}
+
+	GLuint Texture2D::getId() const {
+		return texture;
 	}
 }
