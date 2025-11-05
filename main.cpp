@@ -492,8 +492,7 @@ Minecraft::Assets::VAO createCube(uint8_t atlasIndex) {
 		},
 		[]() {
 			return Minecraft::Assets::EBO::create([](GLuint ebo) {
-				glNamedBufferData(ebo, sizeof(indices), nullptr, GL_STATIC_DRAW);
-				glNamedBufferSubData(ebo, 0, sizeof(indices), indices);
+				glNamedBufferData(ebo, sizeof(indices), indices, GL_STATIC_DRAW);
 
 				return sizeof(indices) / sizeof(indices[0]);
 			});
@@ -515,6 +514,7 @@ int main() {
 		->use();
 
 	std::shared_ptr<Minecraft::Assets::Texture2D> img = Minecraft::Assets::Texture2D::load(std::filesystem::path("blocks.png"));
+	img->bind();
 
 	ImGuiIO& io = ImGui::GetIO();
 
