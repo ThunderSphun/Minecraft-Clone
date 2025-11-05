@@ -646,18 +646,26 @@ int main() {
 
 		if (ImGui::Begin("textures")) {
 			static glm::ivec2 uv{0, 0};
-			ImGui::Text("texture atlas");
-			ImVec2 pos = ImGui::GetCursorScreenPos();
+			ImGui::Text("block texture atlas");
+			ImVec2 screenPos = ImGui::GetCursorScreenPos();
+			ImVec2 pos = ImGui::GetCursorPos();
 			ImGui::Image(img->getId(), ImVec2(img->getSize().x, img->getSize().y));
-			if (io.MouseClicked[0]) {
-				glm::vec2 clickedPos{io.MousePos.x - pos.x, io.MousePos.y - pos.y};
+			if (ImGui::IsItemHovered())
+				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+			ImGui::SetCursorPos(pos);
+			ImGui::InvisibleButton("block texture atlas", ImVec2(img->getSize().x, img->getSize().y));
+			if (ImGui::IsItemActive()) {
+				glm::vec2 clickedPos{io.MousePos.x - screenPos.x, io.MousePos.y - screenPos.y};
 				clickedPos /= 16;
 				if (
 					clickedPos.x >= 0 && clickedPos.x < 16 &&
 					clickedPos.y >= 0 && clickedPos.y < 16
-				)
+				) {
+					io.ConfigWindowsMoveFromTitleBarOnly = true;
 					uv = (glm::ivec2) clickedPos;
-			}
+				}
+			} else if (io.ConfigWindowsMoveFromTitleBarOnly)
+				io.ConfigWindowsMoveFromTitleBarOnly = false;
 			ImGui::SliderInt2("uvs", glm::value_ptr(uv), 0, 15, nullptr, ImGuiSliderFlags_AlwaysClamp);
 			ImGui::Image(img->getId(), {128, 128}, {uv.x / 16.0f, uv.y / 16.0f}, {(uv.x + 1) / 16.0f, (uv.y + 1) / 16.0f});
 		}
