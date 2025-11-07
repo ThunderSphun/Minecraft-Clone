@@ -649,11 +649,16 @@ int main() {
 			ImGui::Text("block texture atlas");
 			ImVec2 screenPos = ImGui::GetCursorScreenPos();
 			ImVec2 pos = ImGui::GetCursorPos();
-			ImGui::Image(img->getId(), ImVec2(img->getSize().x, img->getSize().y));
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 });
+			ImGui::ImageButton("block texture atlas",
+				img->getId(),
+				ImVec2(img->getSize().x, img->getSize().y),
+				{ 0, 0 }, { 1, 1 },
+				{ 0, 0, 0, 1.0f },
+				{ 1, 1, 1, 1.0f });
+			ImGui::PopStyleVar();
 			if (ImGui::IsItemHovered())
 				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-			ImGui::SetCursorPos(pos);
-			ImGui::InvisibleButton("block texture atlas", ImVec2(img->getSize().x, img->getSize().y));
 			if (ImGui::IsItemActive()) {
 				glm::vec2 clickedPos{io.MousePos.x - screenPos.x, io.MousePos.y - screenPos.y};
 				clickedPos /= 16;
